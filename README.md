@@ -75,7 +75,7 @@ Ein lokaler Aufruf von `/dzt` ohne ODAS-Relay liefert erwartungsgemäß keinen e
 
 - ODAS-Paketformat: `2`
 - API-Version: `1`
-- App-Version: `1.1.1`
+- App-Version: `1.1.2`
 - ZIP-Inhalt: `app/`, `assets/`, `app-package.json` und `CHANGELOG.md`
 - Das Paket ist lokal geprüft.
 - Ein eigenes öffentliches Repository, ein finaler Repository-Link und eine echte ODAS-Zielinstanz sind noch nicht autorisiert.

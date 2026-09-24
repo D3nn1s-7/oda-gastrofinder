@@ -123,6 +123,7 @@ test("die Vollscreen-CSS enthält die sichtbaren Layoutbereiche", () => {
     assert.match(css, new RegExp(selector.replace(".", "\\.")));
   }
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.match(css, /body:not\(\.gf-app-fullscreen\)\s*\{[\s\S]*?overflow-x:\s*hidden/);
 });
 
 test("Katalog rendert den aktuellen gefilterten Bestand mit Rückweg", () => {

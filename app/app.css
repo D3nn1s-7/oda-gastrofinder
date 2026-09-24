@@ -1567,7 +1567,12 @@ body.gf-app-fullscreen #main-content {
   }
 }
 
+html:not(.gf-app-fullscreen) {
+  overflow-x: hidden;
+}
+
 body:not(.gf-app-fullscreen) {
+  overflow-x: hidden;
   min-height: 100dvh;
   color: var(--gf-ink);
   background: #f5f0e6;

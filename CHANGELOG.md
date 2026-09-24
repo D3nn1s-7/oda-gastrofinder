@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.2 - 2026-09-24
+- **FIX:** Sekundärseiten verursachen auf Desktop keinen horizontalen Overflow durch das offscreen positionierte ODAS-Offcanvas.
+
 ## 1.1.1 - 2026-09-24
 - **FIX:** DZT-Übersichtsabfrage bindet das Prädikat auch für direkte Root-Tripel; Live-Relay-Antworten werden dadurch nicht mehr als unvollständig abgewiesen.
 
