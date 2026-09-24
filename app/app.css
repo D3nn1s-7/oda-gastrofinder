@@ -66,6 +66,7 @@
 .gf-button:hover, .gf-segment button:hover { filter: brightness(.96); }
 
 .gf-workspace { position: relative; display: grid; grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr) minmax(20rem, 23rem); gap: .85rem; min-height: 36rem; }
+.gf-root:not(.gf-has-details) .gf-workspace { grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr); }
 .gf-map { position: relative; grid-column: 2; grid-row: 1; min-height: 36rem; overflow: hidden; border: 1px solid var(--gf-line); border-radius: 1.2rem; background: #e5ecdf; }
 .gf-map-fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; color: var(--gf-muted); background: #e5ecdf; }
 .gf-results, .gf-details { position: relative; z-index: 2; min-width: 0; overflow: hidden; background: var(--gf-surface); border: 1px solid var(--gf-line); border-radius: 1.2rem; box-shadow: var(--gf-shadow); }
@@ -160,7 +161,7 @@
 .gf-map .leaflet-control-attribution { font-size: .65rem; }
 
 @media (max-width: 1199.98px) {
-  .gf-workspace { grid-template-columns: minmax(17rem, 23rem) minmax(0, 1fr); }
+  .gf-workspace, .gf-root:not(.gf-has-details) .gf-workspace { grid-template-columns: minmax(17rem, 23rem) minmax(0, 1fr); }
   .gf-results { grid-column: 1; }
   .gf-map { grid-column: 2; }
   .gf-details { grid-column: 1; grid-row: 1; z-index: 5; max-height: 42rem; }

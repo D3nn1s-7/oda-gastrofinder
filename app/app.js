@@ -1303,6 +1303,7 @@ function updateGastroView(root, state) {
     more.hidden = view.pois.length <= limit;
   }
   const details = root.querySelector('[data-gf="details"]');
+  if (root.classList && root.classList.toggle) root.classList.toggle("gf-has-details", Boolean(state.selectedId));
   if (details) {
     const selected = state.selectedId ? state.byId.get(state.selectedId) : null;
     if (selected) {
