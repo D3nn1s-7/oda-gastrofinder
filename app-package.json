@@ -1,0 +1,324 @@
+{
+  "app-entwickler-id": "12343",
+  "app-entwickler-name": "ondics-gmbh",
+  "name-in-url": "gastrofinder",
+  "name": "Gastrofinder",
+  "app-version": "1.0.0",
+  "app-package-version": "2",
+  "odas-app-icon": "assets/odas-app-icon.svg",
+  "app-icon": "assets/odas-app-icon.svg",
+  "kurzbeschreibung": "Technische ODAS-Vorlage mit Hash-Routing, Instanz-Konfiguration und optionalem Proxy-Muster für neue Open-Data-Apps.",
+  "beschreibung": [
+    "_multiline_",
+    "Die Generic Open Data App ist die technische Vorlage für neue Apps im Open Data App Store.",
+    "",
+    "Sie stellt das gemeinsame Layout, die ODAS-Konfigurationsanbindung und wiederverwendbare Helfer für Hash-Routing und Proxy-Abrufe bereit und zeigt die wirksame Instanz-Konfiguration als Vorschau. Eine Fachdatenabbildung ist nicht enthalten – vor der Veröffentlichung werden Fachlogik, Metadaten, Datenmodell, Beschreibung, Screenshots und Icon durch app-spezifische Inhalte ersetzt.",
+    "",
+    "## Methodik",
+    "",
+    "Die Vorlage rendert auf der Startseite die geladene Instanz-Konfiguration als JSON-Vorschau und zeigt den Status des optionalen ODAS-Proxys (`proxyAktiv`).",
+    "",
+    "Routing und Konfigurationsladen liegen in der austauschbaren Base. Die app-spezifische Datei `app/app.js` stellt die Proxy-Hilfen (`fetchOdasResource`, `fetchOdasJson`, `getOdasAppBasePath`, `getOdasProxyEndpoint`) bereit; Fachlogik wird ausschließlich in `app/app.js` und `app/app.css` ergänzt. Die Informationsseiten (`Beschreibung`, `Kontakt`, `Impressum`, `Datenschutz`) werden aus derselben Instanz-Konfiguration erzeugt.",
+    "",
+    "Welche Datenquelle oder welches Fachschema tatsächlich verwendet wird, hängt von der abgeleiteten App ab.",
+    "",
+    "## Datenquelle",
+    "",
+    "Die Generic-App lädt keinen Fachdatenbestand. Sie verwendet ausschließlich die lokale Instanz-Konfiguration und das gebündelte Beispielschema.",
+    "",
+    "- **Instanz-Konfiguration:** lokale Datei `odas-config/config.json` bzw. ODAS-Konfiguration (`urlDaten`, `apiurls` – derzeit leer, in abgeleiteten Apps zu setzen)",
+    "- **Beispielschema:** `assets/schema.json` im App-Paket (Frictionless Table Schema)",
+    "- **Portal-Platzhalter:** [{{odp.name}}]({{odp.url}}) – wird in abgeleiteten Apps durch die reale Portal- und Datensatz-URL ersetzt",
+    "",
+    "Angezeigt wird nur der konfigurierte Stand; Verfügbarkeit und Aktualität hängen von der jeweiligen abgeleiteten App ab.",
+    "",
+    "## Open Data App",
+    "",
+    "Diese App ist die technische Vorlage für den [Open Data App Store](https://open-data-app-store.de/) und ist Open Source. Abgeleitete Apps werden als eigenständige Open Data Apps betrieben und konfiguriert.",
+    "",
+    "- [Open Data App Store](https://open-data-app-store.de/) – die Plattform für Open Data Apps",
+    "- [Alle Open Data Apps auf GitHub](https://github.com/open-data-apps) – die Organisation mit allen Apps",
+    "- [oda-generic](https://github.com/open-data-apps/oda-generic) – das Repository dieser Vorlage"
+  ],
+  "tags-funktion": [
+    "Vorlage",
+    "Konfigurationsvorschau",
+    "Proxy"
+  ],
+  "tags-dateityp": [
+    "JSON"
+  ],
+  "tags-datenart": [
+    "Konfigurationsdaten"
+  ],
+  "screenshots": [
+    "assets/Desktop_Screenshot.png",
+    "assets/Mobile_Screenshot.png"
+  ],
+  "daten": {
+    "beschreibung": "Die Generic-App lädt selbst keinen Fachdatenbestand. assets/schema.json ist ein gültiges Frictionless-Beispielschema und muss in abgeleiteten Apps durch das tatsächliche Tabellenmodell ersetzt werden.",
+    "schema": "assets/schema.json",
+    "beispiel": "Platzhalter für abgeleitete Apps: daten.beispiel beschreibt die Antwortform der Quelle (z. B. CKAN-Datastore mit result.records, CSV-Datei mit Kopfzeile), daten.beispiel-url zeigt auf einen direkt ladbaren Beispiel-Endpunkt (identisch zum apiurls-Beispiel). Vor der Veröffentlichung durch app-spezifische Angaben ersetzen.",
+    "beispiel-url": ""
+  },
+  "branding-css": "",
+  "api-version": "1",
+  "odas-services": [
+    "tourismus-deutschland"
+  ],
+  "instanz-config": {
+    "seitentitel": {
+      "label": "Seitentitel",
+      "category": "allgemein",
+      "hilfe": "Der Seitentitel wird im Browser-Tab der App angezeigt.",
+      "default": "Gastrofinder",
+      "format": {
+        "typ": "string",
+        "laenge": 80
+      },
+      "erforderlich": "ja"
+    },
+    "titel": {
+      "label": "Titel",
+      "category": "allgemein",
+      "hilfe": "Der Titel wird in der Kopfzeile der App angezeigt.",
+      "default": "Gastrofinder",
+      "format": {
+        "typ": "string",
+        "laenge": 80
+      },
+      "erforderlich": "ja"
+    },
+    "icon": {
+      "label": "Portal-Logo",
+      "category": "allgemein",
+      "hilfe": "Das Logo wird links oben in der Kopfzeile angezeigt und führt zur Startseite.",
+      "default": "{{{odp.logo}}}",
+      "format": {
+        "typ": "image",
+        "hoehe": 100,
+        "breite": 300
+      },
+      "erforderlich": "ja"
+    },
+    "kontakt": {
+      "label": "Kontakt",
+      "category": "kontakt-rechtliches",
+      "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Kontakt angezeigt.",
+      "default": [
+        "_multiline_",
+        "Sie haben Fragen, Hinweise oder Verbesserungsvorschläge zu dieser App? Wenden Sie sich gern an den Anbieter des Open Data Portals.",
+        "",
+        "- Tel.: [{{odp.anbieter.tel}}](tel:{{odp.anbieter.tel}})",
+        "- E-Mail: [{{odp.anbieter.email}}](mailto:{{odp.anbieter.email}})"
+      ],
+      "format": {
+        "typ": "markdown"
+      },
+      "erforderlich": "ja"
+    },
+    "beschreibung": {
+      "label": "Beschreibung",
+      "category": "beschreibung",
+      "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Über diese App angezeigt.",
+      "default": [
+        "_multiline_",
+        "Die Generic Open Data App ist die technische Vorlage für neue Apps im Open Data App Store.",
+        "",
+        "Sie stellt das gemeinsame Layout, die ODAS-Konfigurationsanbindung und wiederverwendbare Helfer für Hash-Routing und Proxy-Abrufe bereit und zeigt die wirksame Instanz-Konfiguration als Vorschau. Eine Fachdatenabbildung ist nicht enthalten – vor der Veröffentlichung werden Fachlogik, Metadaten, Datenmodell, Beschreibung, Screenshots und Icon durch app-spezifische Inhalte ersetzt.",
+        "",
+        "## Methodik",
+        "",
+        "Die Vorlage rendert auf der Startseite die geladene Instanz-Konfiguration als JSON-Vorschau und zeigt den Status des optionalen ODAS-Proxys (`proxyAktiv`).",
+        "",
+        "Routing und Konfigurationsladen liegen in der austauschbaren Base. Die app-spezifische Datei `app/app.js` stellt die Proxy-Hilfen (`fetchOdasResource`, `fetchOdasJson`, `getOdasAppBasePath`, `getOdasProxyEndpoint`) bereit; Fachlogik wird ausschließlich in `app/app.js` und `app/app.css` ergänzt. Die Informationsseiten (`Beschreibung`, `Kontakt`, `Impressum`, `Datenschutz`) werden aus derselben Instanz-Konfiguration erzeugt.",
+        "",
+        "Welche Datenquelle oder welches Fachschema tatsächlich verwendet wird, hängt von der abgeleiteten App ab.",
+        "",
+        "## Datenquelle",
+        "",
+        "Die Generic-App lädt keinen Fachdatenbestand. Sie verwendet ausschließlich die lokale Instanz-Konfiguration und das gebündelte Beispielschema.",
+        "",
+        "- **Instanz-Konfiguration:** lokale Datei `odas-config/config.json` bzw. ODAS-Konfiguration (`urlDaten`, `apiurls` – derzeit leer, in abgeleiteten Apps zu setzen)",
+        "- **Beispielschema:** `assets/schema.json` im App-Paket (Frictionless Table Schema)",
+        "- **Portal-Platzhalter:** [{{odp.name}}]({{odp.url}}) – wird in abgeleiteten Apps durch die reale Portal- und Datensatz-URL ersetzt",
+        "",
+        "Angezeigt wird nur der konfigurierte Stand; Verfügbarkeit und Aktualität hängen von der jeweiligen abgeleiteten App ab.",
+        "",
+        "## Open Data App",
+        "",
+        "Diese App ist die technische Vorlage für den [Open Data App Store](https://open-data-app-store.de/) und ist Open Source. Abgeleitete Apps werden als eigenständige Open Data Apps betrieben und konfiguriert.",
+        "",
+        "- [Open Data App Store](https://open-data-app-store.de/) – die Plattform für Open Data Apps",
+        "- [Alle Open Data Apps auf GitHub](https://github.com/open-data-apps) – die Organisation mit allen Apps",
+        "- [oda-generic](https://github.com/open-data-apps/oda-generic) – das Repository dieser Vorlage"
+      ],
+      "format": {
+        "typ": "markdown"
+      },
+      "erforderlich": "ja"
+    },
+    "impressum": {
+      "label": "Impressum",
+      "category": "kontakt-rechtliches",
+      "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Impressum angezeigt.",
+      "default": [
+        "_multiline_",
+        "## Anbieter",
+        "",
+        "{{{odp.anbieter.orgName}}}  ",
+        "{{{odp.anbieter.orgUnit}}}",
+        "",
+        "{{odp.anbieter.strasse}}  ",
+        "{{odp.anbieter.plzort}}",
+        "",
+        "Website: [{{odp.anbieter.url}}]({{odp.anbieter.url}})",
+        "",
+        "## Ansprechperson",
+        "",
+        "{{odp.anbieter.kontakt-bezeichnung}}  ",
+        "{{odp.anbieter.name}}",
+        "",
+        "## Kontakt",
+        "",
+        "Tel.: {{odp.anbieter.tel}}  ",
+        "E-Mail: [{{odp.anbieter.email}}](mailto:{{odp.anbieter.email}})"
+      ],
+      "format": {
+        "typ": "markdown"
+      },
+      "erforderlich": "ja"
+    },
+    "datenschutz": {
+      "label": "Datenschutz",
+      "category": "kontakt-rechtliches",
+      "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Datenschutz angezeigt.",
+      "default": [
+        "_multiline_",
+        "Die Generic-App verarbeitet im Browser nur die vom ODAS bereitgestellte Instanz-Konfiguration. Für eine abgeleitete App ist die Datenschutzerklärung an die tatsächlich geladenen Daten und eingebundenen Dienste anzupassen.",
+        "",
+        "Alle für die Darstellung benötigten Programmbibliotheken werden mit der App ausgeliefert. Beim Aufruf werden dafür keine externen Server kontaktiert.",
+        "",
+        "Die Vorlage ruft selbst keine Datenquelle ab; das Laden der konfigurierten Datenquelle ist Sache der abgeleiteten App und wird in deren Datenschutzerklärung beschrieben."
+      ],
+      "format": {
+        "typ": "markdown"
+      },
+      "erforderlich": "ja"
+    },
+    "fusszeile": {
+      "label": "Fußzeile",
+      "category": "kontakt-rechtliches",
+      "hilfe": "Der Text wird am unteren Rand der App angezeigt.",
+      "default": "© {{jahr}} | App und Daten: {{odp.anbieter.name}} | Entwicklung: {{app.developer.name}} | ODAS: {{odas.betreiber.name}}",
+      "format": {
+        "typ": "string",
+        "laenge": 255
+      },
+      "erforderlich": "ja"
+    },
+    "brandingCSS": {
+      "label": "Zusätzliches Branding-CSS",
+      "category": "sonstiges",
+      "hilfe": "Optionaler CSS-Code für die konkrete App-Instanz.",
+      "default": "",
+      "format": {
+        "typ": "string",
+        "laenge": 10000
+      },
+      "erforderlich": "nein"
+    },
+    "brandingCSSFile": {
+      "label": "Branding-CSS-Datei",
+      "category": "sonstiges",
+      "hilfe": "Optionale URL zu einer zusätzlichen CSS-Datei für die konkrete App-Instanz.",
+      "default": "",
+      "format": {
+        "typ": "url",
+        "laenge": 500
+      },
+      "erforderlich": "nein"
+    },
+    "urlDaten": {
+      "label": "URL zum Datensatz",
+      "category": "datenherkunft",
+      "hilfe": "Startseite des Open-Data-Germany-Portals zum Knowledge Graph.",
+      "default": "https://open-data-germany.org/",
+      "beispiel": "",
+      "format": {
+        "typ": "url",
+        "laenge": 500
+      },
+      "erforderlich": "nein"
+    },
+    "apiurls": {
+      "label": "Datenquelle",
+      "category": "datenherkunft",
+      "hilfe": "DZT-SPARQL-Endpunkt. Die App liest ausschließlich Restaurant- und Café-Datensätze über das ODAS-DZT-Relay.",
+      "typ": "array",
+      "format": {
+        "typ": "url",
+        "laenge": 500
+      },
+      "urls": [
+        {
+          "name": "dztsparql",
+          "label": "DZT Knowledge Graph (SPARQL)",
+          "default": "https://proxy.opendatagermany.io/api/ts/v1/kg/sparql",
+          "beispiel": "https://proxy.opendatagermany.io/api/ts/v1/kg/sparql",
+          "erforderlich": "ja"
+        }
+      ]
+    },
+    "ort": {
+      "label": "Ort oder Region",
+      "category": "sonstiges",
+      "hilfe": "Suchgebiet für die eindeutige Offline-Ortsauflösung; Besucher ändern es nicht.",
+      "default": "",
+      "format": {
+        "typ": "string",
+        "laenge": 120
+      },
+      "erforderlich": "ja"
+    },
+    "radiusKm": {
+      "label": "Umkreis in Kilometern",
+      "category": "sonstiges",
+      "hilfe": "Suchgebiet um das konfigurierte Zentrum; Besucher ändern es nicht.",
+      "default": "25",
+      "format": {
+        "typ": "dropdown",
+        "optionen": [
+          "5",
+          "10",
+          "25",
+          "50",
+          "100"
+        ]
+      },
+      "erforderlich": "ja"
+    },
+    "latitude": {
+      "label": "Breitengrad",
+      "category": "sonstiges",
+      "hilfe": "Optional, immer zusammen mit dem Längengrad; erforderlich bei unbekanntem oder mehrdeutigem Ort.",
+      "default": "",
+      "format": {
+        "typ": "string",
+        "laenge": 40
+      },
+      "erforderlich": "nein"
+    },
+    "longitude": {
+      "label": "Längengrad",
+      "category": "sonstiges",
+      "hilfe": "Optional, immer zusammen mit dem Breitengrad; erforderlich bei unbekanntem oder mehrdeutigem Ort.",
+      "default": "",
+      "format": {
+        "typ": "string",
+        "laenge": 40
+      },
+      "erforderlich": "nein"
+    }
+  }
+}

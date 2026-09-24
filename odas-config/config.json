@@ -1,0 +1,62 @@
+{
+  "seitentitel": "Gastrofinder",
+  "titel": "Gastrofinder",
+  "icon": "logo_ondics.png",
+  "kontakt": [
+    "_multiline_",
+    "<p>Sie haben Fragen, Hinweise oder Verbesserungsvorschläge zu dieser App? Wenden Sie sich gern an den Anbieter des Open Data Portals.</p>",
+    "<p>Telefon: <a href='tel:+49711310093100'>0711 31009-3100</a><br>E-Mail: <a href='mailto:info@ondics.de'>info@ondics.de</a></p>"
+  ],
+  "beschreibung": [
+    "<p>Die Generic Open Data App ist die technische Vorlage für neue Apps im Open Data App Store.</p>",
+    "<p>Sie stellt das gemeinsame Layout, die ODAS-Konfigurationsanbindung und wiederverwendbare Helfer für Hash-Routing und Proxy-Abrufe bereit und zeigt die wirksame Instanz-Konfiguration als Vorschau. Eine Fachdatenabbildung ist nicht enthalten – vor der Veröffentlichung werden Fachlogik, Metadaten, Datenmodell, Beschreibung, Screenshots und Icon durch app-spezifische Inhalte ersetzt.</p>",
+    "<h2>Methodik</h2>",
+    "<p>Die Vorlage rendert auf der Startseite die geladene Instanz-Konfiguration als JSON-Vorschau und zeigt den Status des optionalen ODAS-Proxys (<code>proxyAktiv</code>).</p>",
+    "<p>Routing und Konfigurationsladen liegen in der austauschbaren Base. Die app-spezifische Datei <code>app/app.js</code> stellt die Proxy-Hilfen (<code>fetchOdasResource</code>, <code>fetchOdasJson</code>, <code>getOdasAppBasePath</code>, <code>getOdasProxyEndpoint</code>) bereit; Fachlogik wird ausschließlich in <code>app/app.js</code> und <code>app/app.css</code> ergänzt. Die Informationsseiten (<code>Beschreibung</code>, <code>Kontakt</code>, <code>Impressum</code>, <code>Datenschutz</code>) werden aus derselben Instanz-Konfiguration erzeugt.</p>",
+    "<p>Welche Datenquelle oder welches Fachschema tatsächlich verwendet wird, hängt von der abgeleiteten App ab.</p>",
+    "<h2>Datenquelle</h2>",
+    "<p>Die Generic-App lädt keinen Fachdatenbestand. Sie verwendet ausschließlich die lokale Instanz-Konfiguration und das gebündelte Beispielschema.</p>",
+    "<ul>",
+    "<li><strong>Instanz-Konfiguration:</strong> lokale Datei <code>odas-config/config.json</code> bzw. ODAS-Konfiguration (<code>urlDaten</code>, <code>apiurls</code> – derzeit leer, in abgeleiteten Apps zu setzen)</li>",
+    "<li><strong>Beispielschema:</strong> <code>assets/schema.json</code> im App-Paket (Frictionless Table Schema)</li>",
+    "<li><strong>Portal-Platzhalter:</strong> <a href=\"{{odp.url}}\" target=\"_blank\">{{odp.name}}</a> – wird in abgeleiteten Apps durch die reale Portal- und Datensatz-URL ersetzt</li>",
+    "</ul>",
+    "<p>Angezeigt wird nur der konfigurierte Stand; Verfügbarkeit und Aktualität hängen von der jeweiligen abgeleiteten App ab.</p>",
+    "<h2>Open Data App</h2>",
+    "<p>Diese App ist die technische Vorlage für den <a href=\"https://open-data-app-store.de/\" target=\"_blank\">Open Data App Store</a> und ist Open Source. Abgeleitete Apps werden als eigenständige Open Data Apps betrieben und konfiguriert.</p>",
+    "<ul>",
+    "<li><a href=\"https://open-data-app-store.de/\" target=\"_blank\">Open Data App Store</a> – die Plattform für Open Data Apps</li>",
+    "<li><a href=\"https://github.com/open-data-apps\" target=\"_blank\">Alle Open Data Apps auf GitHub</a> – die Organisation mit allen Apps</li>",
+    "<li><a href=\"https://github.com/open-data-apps/oda-generic\" target=\"_blank\">oda-generic</a> – das Repository dieser Vorlage</li>",
+    "</ul>"
+  ],
+  "impressum": [
+    "_multiline_",
+    "<h2>Anbieter</h2>",
+    "<p>Ondics GmbH</p>",
+    "<p>Blumenstraße 19<br>70182 Stuttgart</p>",
+    "<p>Website: <a href='https://www.ondics.de/' target='_blank' rel='noopener'>https://www.ondics.de/</a></p>",
+    "<h2>Kontakt</h2>",
+    "<p>Telefon: 0711 31009-3100<br>E-Mail: <a href='mailto:info@ondics.de'>info@ondics.de</a></p>"
+  ],
+  "datenschutz": [
+    "<p>Die Generic-App verarbeitet im Browser nur die vom ODAS bereitgestellte Instanz-Konfiguration. Für eine abgeleitete App ist die Datenschutzerklärung an die tatsächlich geladenen Daten und eingebundenen Dienste anzupassen.</p>",
+    "<p>Alle für die Darstellung benötigten Programmbibliotheken werden mit der App ausgeliefert. Beim Aufruf werden dafür keine externen Server kontaktiert.</p>",
+    "<p>Die Vorlage ruft selbst keine Datenquelle ab; das Laden der konfigurierten Datenquelle ist Sache der abgeleiteten App und wird in deren Datenschutzerklärung beschrieben.</p>"
+  ],
+  "fusszeile": "© 2026 | App und Daten: Ondics GmbH | Entwicklung: Ondics GmbH | ODAS: Ondics GmbH",
+  "brandingCSS": "",
+  "brandingCSSFile": "../assets/branding.css",
+  "urlDaten": "https://open-data-germany.org/",
+  "apiurls": [
+    {
+      "name": "dztsparql",
+      "label": "DZT Knowledge Graph (SPARQL)",
+      "url": "https://proxy.opendatagermany.io/api/ts/v1/kg/sparql"
+    }
+  ],
+  "ort": "Berlin",
+  "radiusKm": "25",
+  "latitude": "52.52",
+  "longitude": "13.405"
+}

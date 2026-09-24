@@ -1,0 +1,45 @@
+{
+  "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+  "fields": [
+    {
+      "name": "id",
+      "title": "ID",
+      "type": "string",
+      "description": "Eindeutiger Bezeichner eines Beispieldatensatzes.",
+      "constraints": {
+        "required": true,
+        "unique": true
+      }
+    },
+    {
+      "name": "bezeichnung",
+      "title": "Bezeichnung",
+      "type": "string",
+      "description": "Menschenlesbare Bezeichnung des Eintrags.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "wert",
+      "title": "Wert",
+      "type": "number",
+      "description": "Beispielhafter numerischer Mess- oder Kennzahlenwert.",
+      "constraints": {
+        "required": false
+      }
+    },
+    {
+      "name": "stand",
+      "title": "Datenstand",
+      "type": "date",
+      "description": "Optionales Datum, auf das sich der Eintrag bezieht.",
+      "constraints": {
+        "required": false
+      }
+    }
+  ],
+  "missingValues": [
+    ""
+  ]
+}
