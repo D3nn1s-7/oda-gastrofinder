@@ -1142,6 +1142,10 @@ function gastroIcon(name) {
     route: '<path d="m12 2 10 10-10 10L2 12Z"/><path d="M8 15v-5h8m-3-3 3 3-3 3"/>',
     share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v8h14v-8"/>',
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/>',
+    shield: '<path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/>',
+    file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
     external: '<path d="M14 3h7v7m0-7L10 14M10 3H3v18h18v-7"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
@@ -2081,6 +2085,31 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
     state.page.error = error;
     updateGastroView(enclosingHtmlDivElement, state);
   }
+}
+
+const GASTRO_SECONDARY_PAGES = {
+  beschreibung: { title: "Über diese App & Methodik", icon: "info" },
+  kontakt: { title: "Kontakt & Ansprechpartner", icon: "mail" },
+  datenschutz: { title: "Datenschutzerklärung", icon: "shield" },
+  impressum: { title: "Impressum", icon: "file" },
+};
+
+function renderGastroSecondaryPage(page, content) {
+  const info = GASTRO_SECONDARY_PAGES[page];
+  if (!info) return null;
+  const body = content == null || content === "" ? "Informationen zu dieser Seite sind derzeit nicht verfügbar." : String(content);
+  return `<div class="gf-secondary-wrapper"><div class="gf-secondary-card" id="secondarySites"><div class="gf-secondary-nav"><a href="#startseite" class="gf-secondary-back-link">${gastroIcon("arrow")}<span>Zurück zur Karte</span></a><span class="gf-secondary-badge">DZT · ODAS</span></div><div class="gf-secondary-header"><span class="gf-secondary-icon">${gastroIcon(info.icon)}</span><div><p class="gf-eyebrow">Gastrofinder</p><h1 class="gf-secondary-title">${escapeHtml(info.title)}</h1></div></div><div class="gf-secondary-body">${body}</div></div></div>`;
+}
+
+function renderPageOverride(page) {
+  if (page === "startseite") return null;
+  const info = GASTRO_SECONDARY_PAGES[page];
+  if (!info) return null;
+  let content = typeof configData !== "undefined" && configData ? configData[page] : "";
+  if (Array.isArray(content)) {
+    content = typeof normalizeMultilineValue === "function" ? normalizeMultilineValue(content) : content.join("\n");
+  }
+  return renderGastroSecondaryPage(page, content);
 }
 
 function onPageLeave(page) {

@@ -174,3 +174,21 @@ test("Detaildialog wird bei Escape geschlossen und Fokus zurückgegeben", () => 
   assert.equal(opener.focused, true);
   assert.equal(state.runtime.detailDialog, null);
 });
+
+test("alle Sekundärseiten verwenden das gemeinsame Layout", () => {
+  const api = loadApp({ configData: { beschreibung: "<h2>Methodik</h2>" } });
+  for (const page of ["beschreibung", "kontakt", "datenschutz", "impressum"]) {
+    const markup = api.renderPageOverride(page);
+    assert.match(markup, /gf-secondary-wrapper/);
+    assert.match(markup, /Zurück zur Karte/);
+    assert.match(markup, /DZT · ODAS/);
+    assert.match(markup, /gf-secondary-body/);
+  }
+  assert.equal(api.renderPageOverride("startseite"), null);
+});
+
+test("serverseitig gerenderter Markdown-Inhalt wird nicht erneut escaped", () => {
+  const api = loadApp({ configData: { kontakt: "<p>Portal <strong>ODAS</strong></p>" } });
+  const markup = api.renderPageOverride("kontakt");
+  assert.match(markup, /<p>Portal <strong>ODAS<\/strong><\/p>/);
+});
