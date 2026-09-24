@@ -1042,8 +1042,102 @@ body.gf-app-fullscreen #main-content {
   }
 }
 
-/* Existing detail/gallery surfaces remain readable until the hero-dialog task. */
+/* Hero detail dialog */
+.gf-detail-dialog {
+  width: min(68rem, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: hidden;
+  color: var(--gf-ink);
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-line);
+  border-radius: 1.2rem;
+  box-shadow: 0 1.8rem 5rem rgba(25, 54, 41, .32);
+}
+
+.gf-detail-dialog::backdrop {
+  background: rgba(25, 54, 41, .62);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.gf-detail-dialog-content {
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+}
+
+.gf-detail-hero {
+  position: relative;
+  min-height: clamp(13rem, 34vh, 22rem);
+  overflow: hidden;
+  color: #fff;
+  background: #24372e;
+}
+
+.gf-detail-hero-image,
+.gf-detail-hero > .gf-no-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.gf-detail-hero-image {
+  display: block;
+  object-fit: cover;
+}
+
+.gf-detail-hero > .gf-no-photo {
+  color: #f7ecd6;
+  background: #51664f;
+}
+
+.gf-detail-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 38, 28, .12) 0%, rgba(18, 38, 28, .84) 100%);
+}
+
+.gf-detail-close {
+  position: absolute;
+  top: .9rem;
+  right: .9rem;
+  z-index: 2;
+  color: #fff;
+  background: rgba(25, 54, 41, .72);
+  border-color: rgba(255, 255, 255, .35);
+}
+
+.gf-detail-hero-caption {
+  position: absolute;
+  right: 1.2rem;
+  bottom: 1.1rem;
+  left: 1.2rem;
+  z-index: 2;
+}
+
+.gf-detail-hero-caption .gf-eyebrow {
+  color: #f0c878;
+}
+
+.gf-detail-hero-caption h2 {
+  margin: 0 0 .25rem;
+  color: #fff;
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .38);
+}
+
+.gf-detail-hero-caption span {
+  color: #f2f5ed;
+  font-size: .8rem;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, .45);
+}
+
 .gf-detail-content {
+
   min-width: 0;
 }
 
@@ -1256,6 +1350,29 @@ body.gf-app-fullscreen #main-content {
 }
 
 @media (max-width: 767.98px) {
+  .gf-detail-dialog {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .gf-detail-dialog-content {
+    max-height: 100dvh;
+  }
+
+  .gf-detail-hero {
+    min-height: 14rem;
+  }
+
+  .gf-detail-hero-caption {
+    right: .9rem;
+    bottom: .9rem;
+    left: .9rem;
+  }
+
   html,
   body {
     overflow-x: hidden;

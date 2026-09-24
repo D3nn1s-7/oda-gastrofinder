@@ -145,3 +145,32 @@ test("Katalogzustand öffnet und schließt ohne Kartenwechsel", () => {
   assert.equal(state.runtime.catalogOpen, false);
   assert.equal(state.view, "map");
 });
+
+test("Hero-Dialog rendert belastbare Aktionen und escapt Detailtexte", () => {
+  const api = loadApp();
+  const markup = api.renderGastroHeroDetails(samplePoi({
+    name: "<b>Synthetic</b>",
+    description: "<script>bad()</script>",
+    websites: ["https://example.org"],
+    telephones: ["+49 30 123"],
+  }), "gf-test", "ready");
+  assert.match(markup, /class="gf-detail-dialog/);
+  assert.match(markup, /&lt;b&gt;Synthetic&lt;\/b&gt;/);
+  assert.doesNotMatch(markup, /<script\b/);
+  assert.match(markup, /Route öffnen/);
+  assert.match(markup, /Anrufen/);
+  assert.match(markup, /Website besuchen/);
+});
+
+test("Detaildialog wird bei Escape geschlossen und Fokus zurückgegeben", () => {
+  const api = loadAppWithFixtures();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  state.runtime.active = true;
+  const opener = { isConnected: true, focus() { this.focused = true; } };
+  let closed = 0;
+  state.runtime.detailDialog = { element: { close: () => { closed += 1; } }, opener };
+  api.closeGastroDetailDialog({ querySelector: () => null }, state);
+  assert.equal(closed, 1);
+  assert.equal(opener.focused, true);
+  assert.equal(state.runtime.detailDialog, null);
+});

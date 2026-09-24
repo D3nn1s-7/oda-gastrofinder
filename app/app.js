@@ -779,6 +779,7 @@ function createGastroState(sourceUrl, region) {
       detailDialog: null,
       catalogOpener: null,
       fullscreen: false,
+      root: null,
     },
   };
 }
@@ -976,32 +977,12 @@ function restoreGastroDetailFocus(root, state, id = null) {
   if (heading && typeof heading.focus === "function") heading.focus();
 }
 
-function closeGastroDetails(state, root = null) {
-  if (!state || !state.detail) return;
-  const opener = state.runtime && state.runtime.detailOpener;
-  if (state.runtime && state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") {
-    state.runtime.detailAbort.abort();
-  }
-  state.runtime.detailAbort = null;
-  state.selectedId = null;
-  state.detail.seq += 1;
-  state.detail.busy = false;
-  state.detail.error = null;
-  state.detail.retryAt = 0;
-  if (state.runtime) state.runtime.detailOpener = null;
-  if (opener && opener.isConnected && typeof opener.focus === "function") {
-    opener.focus();
-  } else if (root && root.querySelector) {
-    const heading = root.querySelector('[data-gf="results-heading"]');
-    if (heading && typeof heading.focus === "function") heading.focus();
-  }
-}
-
 async function selectGastroPoi(state, id, notify = () => {}) {
   if (!state || !state.byId.has(id) || !state.runtime || !state.runtime.active) return;
   if (state.selectedId === id && state.details.has(id)) {
     state.detail.busy = false;
     state.detail.error = null;
+    if (state.runtime.root) openGastroDetailDialog(state.runtime.root, state, state.runtime.detailOpener);
     notify();
     return;
   }
@@ -1010,16 +991,18 @@ async function selectGastroPoi(state, id, notify = () => {}) {
   }
   const generation = state.runtime.generation;
   state.selectedId = id;
-  state.detail.busy = false;
+  state.detail.busy = true;
   state.detail.error = null;
+  if (state.runtime.root) openGastroDetailDialog(state.runtime.root, state, state.runtime.detailOpener);
   if (state.details.has(id)) {
+    state.detail.busy = false;
+    if (state.runtime.root) updateGastroDetailDialog(state.runtime.root, state);
     notify();
     return;
   }
   const sequence = ++state.detail.seq;
   const controller = typeof AbortController === "function" ? new AbortController() : null;
   state.runtime.detailAbort = controller;
-  state.detail.busy = true;
   const stillCurrent = () => runtimeIsCurrent(state, generation) &&
     state.detail.seq === sequence && state.selectedId === id;
   try {
@@ -1074,6 +1057,7 @@ function disposeGastroRuntime(state) {
     if (detailElement && typeof detailElement.close === "function") {
       try { detailElement.close(); } catch (_error) { /* bereits geschlossen */ }
     }
+    if (detailElement && typeof detailElement.remove === "function") detailElement.remove();
   }
   if (runtime.gallery && typeof runtime.gallery.close === "function") runtime.gallery.close();
   if (runtime.map) {
@@ -1107,6 +1091,7 @@ function disposeGastroRuntime(state) {
   runtime.detailDialog = null;
   runtime.catalogOpener = null;
   runtime.fullscreen = false;
+  runtime.root = null;
   runtime.cluster = null;
   state.page.busy = false;
   state.detail.busy = false;
@@ -1233,12 +1218,12 @@ function renderGastroHours(hours) {
   }).join("")}</ul>`;
 }
 
-function renderGastroDetails(poi, uid = "gf-detail", status = "loading") {
+function renderGastroHeroDetails(poi, uid = "gf-detail", status = "loading") {
   if (status === "loading") {
-    return `<div class="gf-detail-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Details werden geladen …</div>`;
+    return `<div class="gf-detail-dialog-content gf-detail-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Details werden geladen …</div>`;
   }
   if (status === "error") {
-    return `<div class="gf-detail-status" role="alert">Die Detailangaben konnten nicht geladen werden. Die Grunddaten bleiben sichtbar.</div>`;
+    return `<div class="gf-detail-dialog-content gf-detail-status" role="alert">Die Detailangaben konnten nicht geladen werden. Die Grunddaten bleiben sichtbar.</div>`;
   }
   const item = poi || {};
   const address = item.address || {};
@@ -1248,18 +1233,25 @@ function renderGastroDetails(poi, uid = "gf-detail", status = "loading") {
   const source = item.dataLicense || {};
   const images = (item.images || []).filter(gastroImageIsUsable);
   const route = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${item.lat},${item.lng}`)}`;
-  const website = (item.websites || [])[0] || "";
-  const telephone = (item.telephones || [])[0] || "";
-  return `<div class="gf-detail-content" id="${escapeHtml(`${uid}-content`)}">
-    <div class="gf-detail-top"><div><p class="gf-eyebrow">${escapeHtml(gastroTypeLabels(item).join(" · "))}</p><h2>${escapeHtml(item.name || "Name nicht angegeben")}</h2></div><button type="button" class="gf-icon-button" data-gf-close aria-label="Details schließen">${gastroIcon("close")}</button></div>
-    ${images.length ? `<div class="gf-gallery">${images.map((image, index) => `<button type="button" class="gf-gallery-item" data-gf-gallery data-gf-image-index="${index}" aria-label="Bild ${index + 1} vergrößern"><img src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || item.name || "Gastrofinder-Bild")}" loading="lazy"><span>${index + 1}/${images.length}</span></button>`).join("")}</div>` : gastroNoPhoto(item.name || "Gastrofinder")}
+  const website = safeHttpUrl((item.websites || [])[0]);
+  const telephone = safeTelephone((item.telephones || [])[0]);
+  const hero = images[0]
+    ? `<img class="gf-detail-hero-image" src="${escapeHtml(safeHttpUrl(images[0].url))}" alt="${escapeHtml(images[0].title || item.name || "Gastrofinder-Bild")}">`
+    : gastroNoPhoto(item.name || "Gastrofinder");
+  return `<div class="gf-detail-dialog-content" id="${escapeHtml(`${uid}-content`)}">
+    <div class="gf-detail-hero">${hero}<div class="gf-detail-hero-overlay"></div><button type="button" class="gf-icon-button gf-detail-close" data-gf-close aria-label="Details schließen">${gastroIcon("close")}</button><div class="gf-detail-hero-caption"><p class="gf-eyebrow">${escapeHtml(gastroTypeLabels(item).join(" · "))}</p><h2 id="${escapeHtml(`${uid}-title`)}">${escapeHtml(item.name || "Name nicht angegeben")}</h2><span>${escapeHtml([item.address && item.address.locality, Number.isFinite(Number(item.distanceKm)) ? `${Number(item.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km Luftlinie` : ""].filter(Boolean).join(" · ") || "Ort nicht angegeben")}</span></div></div>
     <div class="gf-detail-body"><p class="gf-description">${escapeHtml(description)}</p>
       <dl class="gf-facts"><div><dt>${gastroIcon("clock")}Öffnungszeiten</dt><dd>${renderGastroHours(item.openingHours)}</dd></div><div><dt>${gastroIcon("cup")}Küche</dt><dd>${escapeHtml(cuisine)}</dd></div><div><dt>${gastroIcon("pin")}Adresse</dt><dd>${escapeHtml(addressText)}</dd></div></dl>
       <div class="gf-detail-actions"><a class="gf-button gf-button-primary" href="${escapeHtml(route)}" target="_blank" rel="noopener noreferrer">${gastroIcon("route")} Route öffnen</a>${telephone ? `<a class="gf-button gf-button-secondary" href="tel:${escapeHtml(telephone.replace(/[^\d+]/g, ""))}">${gastroIcon("phone")} Anrufen</a>` : ""}</div>
-      ${website ? `<a class="gf-text-link" href="${escapeHtml(safeHttpUrl(website))}" target="_blank" rel="noopener noreferrer">Website besuchen ${gastroIcon("external")}</a>` : ""}
+      ${website ? `<a class="gf-text-link" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Website besuchen ${gastroIcon("external")}</a>` : ""}
+      ${images.length > 1 ? `<div class="gf-gallery" aria-label="Weitere Bilder">${images.slice(1).map((image, index) => `<button type="button" class="gf-gallery-item" data-gf-gallery data-gf-image-index="${index + 1}" aria-label="Bild ${index + 2} vergrößern"><img src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || item.name || "Gastrofinder-Bild")}" loading="lazy"><span>${index + 2}/${images.length}</span></button>`).join("")}</div>` : ""}
     </div>
     <footer class="gf-detail-source"><span>DZT Knowledge Graph</span><span>${escapeHtml(source.attribution || "Lizenz: " + (source.url || "nicht angegeben"))}</span></footer>
   </div>`;
+}
+
+function renderGastroDetails(poi, uid = "gf-detail", status = "loading") {
+  return renderGastroHeroDetails(poi, uid, status);
 }
 
 function renderGastroShell(root, state) {
@@ -1396,20 +1388,6 @@ function updateGastroView(root, state) {
     const limit = state.view === "catalog" ? state.visible.catalog : state.visible.list;
     more.hidden = view.pois.length <= limit;
   }
-  const details = root.querySelector('[data-gf="details"]');
-  if (root.classList && root.classList.toggle) root.classList.toggle("gf-has-details", Boolean(state.selectedId));
-  if (details) {
-    const selected = state.selectedId ? state.byId.get(state.selectedId) : null;
-    if (selected) {
-      const detail = state.details.get(selected.id);
-      const status = state.detail.error ? "error" : state.detail.busy || !detail ? "loading" : "ready";
-      details.innerHTML = renderGastroDetails(detail || selected, state.runtime.uid, status);
-      details.hidden = false;
-    } else {
-      details.hidden = true;
-      details.innerHTML = "";
-    }
-  }
   if (typeof root.querySelectorAll === "function") {
     for (const button of root.querySelectorAll("[data-gf-filter]")) {
       button.setAttribute("aria-pressed", button.getAttribute("data-gf-filter") === state.filters.type ? "true" : "false");
@@ -1428,6 +1406,7 @@ function updateGastroView(root, state) {
     }
   }
   if (state.runtime.catalogOpen) refreshGastroCatalog(root, state);
+  if (state.runtime.detailDialog) updateGastroDetailDialog(root, state);
   bindGastroImageFallbacks(root);
   updateGastroStatus(root, state, view);
   updateGastroMap(root, state, view);
@@ -1489,6 +1468,109 @@ function closeGastroGallery(root, state, fromDialogEvent = false) {
     const heading = root.querySelector('[data-gf="results-heading"]');
     if (heading && typeof heading.focus === "function") heading.focus();
   }
+}
+
+function updateGastroDetailDialog(root, state) {
+  if (!root || !state || !state.runtime || !state.runtime.detailDialog) return false;
+  const record = state.runtime.detailDialog;
+  const element = record.element || record;
+  if (!element) return false;
+  const selected = state.selectedId ? state.byId.get(state.selectedId) : null;
+  if (!selected) return false;
+  const detail = state.details.get(selected.id);
+  const status = state.detail.error ? "error" : state.detail.busy || !detail ? "loading" : "ready";
+  element.innerHTML = renderGastroHeroDetails(detail || selected, state.runtime.uid, status);
+  if (typeof element.setAttribute === "function") element.setAttribute("aria-labelledby", `gf-${state.runtime.uid}-title`);
+  bindGastroImageFallbacks(element);
+  return true;
+}
+
+function openGastroDetailDialog(root, state, opener = null) {
+  const targetRoot = root || (state && state.runtime && state.runtime.root);
+  if (!targetRoot || !state || !state.runtime || typeof document === "undefined" || !document.body || typeof document.createElement !== "function") return false;
+  if (state.runtime.detailDialog) {
+    updateGastroDetailDialog(targetRoot, state);
+    const current = state.runtime.detailDialog.element || state.runtime.detailDialog;
+    if (current && typeof current.showModal === "function" && !current.open) current.showModal();
+    return true;
+  }
+  const dialog = document.createElement("dialog");
+  const uid = state.runtime.uid || createGastroUid();
+  state.runtime.uid = uid;
+  dialog.className = "gf-detail-dialog";
+  dialog.setAttribute("aria-labelledby", `gf-${uid}-title`);
+  dialog.setAttribute("aria-describedby", `gf-${uid}-content`);
+  if (typeof dialog.addEventListener === "function") {
+    dialog.addEventListener("close", () => {
+      if (state.runtime.detailDialog && state.runtime.detailDialog.element === dialog) closeGastroDetailDialog(targetRoot, state, true);
+    });
+    dialog.addEventListener("click", (event) => {
+      const target = event.target && typeof event.target.closest === "function" ? event.target.closest("button") : null;
+      if (!target) return;
+      if (target.hasAttribute("data-gf-close")) closeGastroDetailDialog(targetRoot, state);
+      if (target.hasAttribute("data-gf-gallery")) openGastroGallery(targetRoot, state, target);
+    });
+  }
+  state.runtime.detailDialog = {
+    element: dialog,
+    opener: opener || (document.activeElement || null),
+  };
+  document.body.appendChild(dialog);
+  updateGastroDetailDialog(targetRoot, state);
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+  const closeButton = dialog.querySelector && dialog.querySelector("[data-gf-close]");
+  if (closeButton && typeof closeButton.focus === "function") closeButton.focus();
+  return true;
+}
+
+function closeGastroDetailDialog(root, state, fromDialogEvent = false) {
+  if (!state || !state.runtime) return false;
+  const record = state.runtime.detailDialog;
+  if (!record) return false;
+  const element = record.element || record;
+  const opener = record.opener;
+  state.runtime.detailDialog = null;
+  if (state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") state.runtime.detailAbort.abort();
+  state.runtime.detailAbort = null;
+  state.detail.seq += 1;
+  state.detail.busy = false;
+  state.detail.error = null;
+  state.detail.retryAt = 0;
+  state.selectedId = null;
+  closeGastroGallery(root, state);
+  if (!fromDialogEvent && element && typeof element.close === "function") {
+    try { element.close(); } catch (_error) { /* bereits geschlossen */ }
+  }
+  if (element && typeof element.remove === "function") element.remove();
+  if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus();
+  else if (root && root.querySelector) {
+    const heading = root.querySelector('[data-gf="results-heading"]');
+    if (heading && typeof heading.focus === "function") heading.focus();
+  }
+  if (root && state.runtime.active) updateGastroView(root, state);
+  invalidateGastroMapSize(state);
+  return true;
+}
+
+function closeGastroDetails(state, root = null) {
+  if (state && state.runtime && state.runtime.detailDialog) return closeGastroDetailDialog(root, state);
+  if (!state || !state.detail) return false;
+  const opener = state.runtime && state.runtime.detailOpener;
+  if (state.runtime && state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") state.runtime.detailAbort.abort();
+  if (state.runtime) state.runtime.detailAbort = null;
+  state.selectedId = null;
+  state.detail.seq += 1;
+  state.detail.busy = false;
+  state.detail.error = null;
+  state.detail.retryAt = 0;
+  if (state.runtime) state.runtime.detailOpener = null;
+  if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus();
+  else if (root && root.querySelector) {
+    const heading = root.querySelector('[data-gf="results-heading"]');
+    if (heading && typeof heading.focus === "function") heading.focus();
+  }
+  return true;
 }
 
 function renderGastroCatalog(view, state) {
@@ -1698,27 +1780,6 @@ function bindGastroShellEvents(root, state) {
   if (area) addGastroListener(area, "click", () => showGastroArea(state), state);
   const share = root.querySelector('[data-gf-share]');
   if (share) addGastroListener(share, "click", () => shareGastroInstance(root), state);
-  const details = root.querySelector('[data-gf="details"]');
-  if (details) addGastroListener(details, "click", (event) => {
-    const target = event.target && typeof event.target.closest === "function" ? event.target.closest("button") : null;
-    if (!target) return;
-    if (target.hasAttribute("data-gf-gallery")) {
-      openGastroGallery(root, state, target);
-    } else if (target.hasAttribute("data-gf-close")) {
-      event.preventDefault();
-      const openerId = state.runtime.detailOpener && typeof state.runtime.detailOpener.getAttribute === "function"
-        ? state.runtime.detailOpener.getAttribute("data-gf-id")
-        : null;
-      closeGastroGallery(root, state);
-      closeGastroDetails(state, root);
-      notify();
-      if (state.runtime.focusTimer !== null) clearTimeout(state.runtime.focusTimer);
-      state.runtime.focusTimer = setTimeout(() => {
-        state.runtime.focusTimer = null;
-        restoreGastroDetailFocus(root, state, openerId);
-      }, 0);
-    }
-  }, state);
   if (typeof ResizeObserver === "function") {
     state.runtime.resizeObserver = new ResizeObserver(() => invalidateGastroMapSize(state));
     const mapLayer = root.querySelector(".gf-fullscreen-wrapper");
@@ -1983,6 +2044,7 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
   state.runtime.generation += 1;
   state.runtime.uid = state.runtime.uid || createGastroUid();
   enclosingHtmlDivElement.gastroState = state;
+  state.runtime.root = enclosingHtmlDivElement;
   setGastroFullscreen(enclosingHtmlDivElement, true);
   renderGastroShell(enclosingHtmlDivElement, state);
   if (typeof enclosingHtmlDivElement.querySelector === "function") {
