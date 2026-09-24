@@ -76,6 +76,8 @@ test("die Startseite rendert Fullscreen-Shell, Brandbar, Floating Actions und Co
   assert.match(root.innerHTML, /data-gf-cockpit/);
   assert.match(root.innerHTML, /data-gf-bottom-switcher/);
   assert.match(root.innerHTML, /data-gf-catalog-toggle/);
+  assert.match(root.innerHTML, new RegExp(`id="gf-${state.runtime.uid}-cockpit"`));
+  assert.match(root.innerHTML, new RegExp(`aria-controls="gf-${state.runtime.uid}-cockpit"`));
   assert.doesNotMatch(root.innerHTML, /data-gf="toolbar"/);
 });
 
@@ -147,6 +149,35 @@ test("Katalogzustand öffnet und schließt ohne Kartenwechsel", () => {
   assert.equal(state.view, "map");
 });
 
+test("Katalog-Map-Aktion schließt das Overlay vor der Detailantwort", () => {
+  const api = loadApp({ fetch: () => new Promise(() => {}) });
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const poi = samplePoi();
+  state.byId.set(poi.id, poi);
+  state.runtime.active = true;
+  state.runtime.root = null;
+  state.runtime.catalogOpen = true;
+  state.view = "catalog";
+  const listeners = {};
+  const root = {
+    classList: { add() {}, remove() {}, toggle() {} },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener: (type, handler) => { listeners[type] = handler; },
+  };
+  state.runtime.root = root;
+  api.bindGastroShellEvents(root, state);
+  const target = {
+    closest: () => target,
+    hasAttribute: (name) => name === "data-gf-catalog-map",
+    getAttribute: () => poi.id,
+  };
+  listeners.click({ target, preventDefault() {} });
+  assert.equal(state.runtime.catalogOpen, false);
+  assert.equal(state.view, "map");
+  assert.equal(state.selectedId, poi.id);
+});
+
 test("Hero-Dialog rendert belastbare Aktionen und escapt Detailtexte", () => {
   const api = loadApp();
   const markup = api.renderGastroHeroDetails(samplePoi({
@@ -161,6 +192,8 @@ test("Hero-Dialog rendert belastbare Aktionen und escapt Detailtexte", () => {
   assert.match(markup, /Route öffnen/);
   assert.match(markup, /Anrufen/);
   assert.match(markup, /Website besuchen/);
+  const loading = api.renderGastroHeroDetails(samplePoi(), "gf-test", "loading");
+  assert.match(loading, /id="gf-test-content"/);
 });
 
 test("Detaildialog wird bei Escape geschlossen und Fokus zurückgegeben", () => {

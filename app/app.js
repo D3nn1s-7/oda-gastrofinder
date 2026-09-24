@@ -1224,10 +1224,10 @@ function renderGastroHours(hours) {
 
 function renderGastroHeroDetails(poi, uid = "gf-detail", status = "loading") {
   if (status === "loading") {
-    return `<div class="gf-detail-dialog-content gf-detail-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Details werden geladen …</div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="gf-detail-dialog-content gf-detail-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Details werden geladen …</div>`;
   }
   if (status === "error") {
-    return `<div class="gf-detail-dialog-content gf-detail-status" role="alert">Die Detailangaben konnten nicht geladen werden. Die Grunddaten bleiben sichtbar.</div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="gf-detail-dialog-content gf-detail-status" role="alert">Die Detailangaben konnten nicht geladen werden. Die Grunddaten bleiben sichtbar.</div>`;
   }
   const item = poi || {};
   const address = item.address || {};
@@ -1282,7 +1282,7 @@ function renderGastroShell(root, state) {
       <button type="button" class="gf-floating-button" data-gf-share data-gf-control="share">${gastroIcon("share")}<span>Teilen</span></button>
       <button type="button" class="gf-floating-button gf-floating-icon" data-gf-menu data-gf-control="menu" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Menü öffnen">${gastroIcon("menu")}</button>
     </div>
-    <aside class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
+    <aside id="gf-${uid}-cockpit" class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
       <div class="gf-cockpit-header">
         <div class="gf-cockpit-brand"><span class="gf-cockpit-mark">${gastroIcon("fork")}</span><div><strong>Gastrofinder</strong><span>Genussatlas</span></div></div>
         <button type="button" class="gf-cockpit-toggle" data-gf-cockpit-toggle data-gf-control="cockpit" aria-expanded="true" aria-label="Cockpit einklappen">${gastroIcon("arrow")}</button>
@@ -1751,11 +1751,10 @@ function bindGastroShellEvents(root, state) {
       const id = target.getAttribute("data-gf-id");
       if (!id) return;
       event.preventDefault();
-      state.runtime.detailOpener = target;
-      selectGastroPoi(state, id, () => {
-        closeGastroCatalog(root, state, true);
-        updateGastroView(root, state);
-      });
+      closeGastroCatalog(root, state);
+      state.runtime.detailOpener = null;
+      selectGastroPoi(state, id, () => updateGastroView(root, state));
+      updateGastroView(root, state);
       return;
     }
     if (target.hasAttribute("data-gf-select") && target.closest("[data-gf-catalog-card]")) {

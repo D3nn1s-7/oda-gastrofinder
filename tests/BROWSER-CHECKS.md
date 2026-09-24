@@ -1,6 +1,6 @@
 # Browser-Prüfungen für den Gastrofinder
 
-Diese Datei dokumentiert die gezielten, lokalen Browserfälle. Die DZT-Antworten werden ausschließlich durch `browser-fixtures.js` ersetzt; einFixture ist kein Live-Nachweis.
+Diese Datei dokumentiert die gezielten, lokalen Browserfälle. Die DZT-Antworten werden ausschließlich durch `browser-fixtures.js` ersetzt; eine Fixture ist kein Live-Nachweis.
 
 ## Start
 
