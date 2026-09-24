@@ -50,3 +50,6 @@ Thumbs.db
 
 # Liefer-ZIP (Bauartefakt, wird bei Bedarf mit make zip erzeugt)
 *.zip
+
+# Superpowers-/Brainstorming-Arbeitsartefakte
+.superpowers/
