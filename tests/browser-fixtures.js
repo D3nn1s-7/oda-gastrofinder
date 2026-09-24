@@ -35,6 +35,26 @@
     } : {});
   }
 
+  function readGastroFixtureState() {
+    const root = document.getElementById("main-content");
+    const state = root && root.gastroState;
+    return {
+      root,
+      state,
+      view: state?.view || "map",
+      catalogOpen: Boolean(state?.runtime?.catalogOpen),
+      mobileView: state?.runtime?.mobileView || "map",
+      focusedControl: document.activeElement?.getAttribute("data-gf-control") || "",
+    };
+  }
+
+  function clickGastroFixtureControl(selector) {
+    const element = document.querySelector(selector);
+    if (!element) throw new Error(`Browser-Fixture-Control fehlt: ${selector}`);
+    element.click();
+    return true;
+  }
+
   function installGastroFixture(mode = "success") {
     const originalFetch = window.fetch.bind(window);
     const originalConfig = configData;
@@ -123,7 +143,23 @@
     window.gastroFixtureResult = result;
     Promise.resolve(typeof loadPage === "function" ? loadPage("startseite") : null)
       .catch((error) => result.errors.push(String(error && error.message || error)))
-      .finally(() => { result.ready = true; });
+      .finally(() => {
+        const snapshot = readGastroFixtureState();
+        result.view = snapshot.view;
+        result.catalogOpen = snapshot.catalogOpen;
+        result.mobileView = snapshot.mobileView;
+        result.focusedControl = snapshot.focusedControl;
+        result.ready = true;
+      });
+    window.gastroFixtureActions = {
+      state: readGastroFixtureState,
+      click: clickGastroFixtureControl,
+      catalog: () => clickGastroFixtureControl("[data-gf-catalog-toggle]"),
+      cockpit: () => clickGastroFixtureControl("[data-gf-cockpit-toggle]"),
+      mobile: () => clickGastroFixtureControl("[data-gf-bottom-switcher]"),
+      detailClose: () => clickGastroFixtureControl("[data-gf-close]"),
+      secondaryBack: () => clickGastroFixtureControl(".gf-secondary-back-link"),
+    };
     return result;
   }
 

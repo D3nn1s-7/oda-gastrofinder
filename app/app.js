@@ -1189,7 +1189,7 @@ function renderGastroCard(poi, uid = "gf-card", selected = false) {
       <div class="gf-badges">${typeLabels.map((label) => `<span class="gf-badge${label === "Café" ? " gf-badge-cafe" : ""}">${escapeHtml(label)}</span>`).join("")}</div>
       <p class="gf-card-place">${escapeHtml(place)}</p>
       <p class="gf-card-cuisine">${escapeHtml(cuisine)}</p>
-      <button type="button" class="gf-card-select" data-gf-select data-gf-id="${escapeHtml(item.id || "")}" aria-pressed="${selected ? "true" : "false"}">${selected ? "Ausgewählt" : "Details ansehen"}</button>
+      <button type="button" class="gf-card-select" data-gf-select data-gf-control="card-details" data-gf-id="${escapeHtml(item.id || "")}" aria-pressed="${selected ? "true" : "false"}">${selected ? "Ausgewählt" : "Details ansehen"}</button>
     </div>
   </article>`;
 }
@@ -1269,7 +1269,7 @@ function renderGastroShell(root, state) {
     <div class="gf-map-layer">
       <div class="gf-map-canvas" data-gf="map" aria-label="Karte der geladenen Gastro-Betriebe">
         <div class="gf-map-fallback" data-gf="map-fallback">Karte wird geladen …</div>
-        <button type="button" class="gf-area-button" data-gf-show-area>${gastroIcon("pin")} Gebiet anzeigen</button>
+        <button type="button" class="gf-area-button" data-gf-show-area data-gf-control="area">${gastroIcon("pin")} Gebiet anzeigen</button>
       </div>
     </div>
     <div class="gf-brandbar" data-gf-brandbar>
@@ -1278,14 +1278,14 @@ function renderGastroShell(root, state) {
       <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
     </div>
     <div class="gf-floating-actions" data-gf-floating-actions aria-label="Kartenaktionen">
-      <button type="button" class="gf-floating-button gf-floating-primary" data-gf-catalog-toggle>${gastroIcon("grid")}<span>Katalog</span></button>
-      <button type="button" class="gf-floating-button" data-gf-share>${gastroIcon("share")}<span>Teilen</span></button>
-      <button type="button" class="gf-floating-button gf-floating-icon" data-gf-menu data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Menü öffnen">${gastroIcon("menu")}</button>
+      <button type="button" class="gf-floating-button gf-floating-primary" data-gf-catalog-toggle data-gf-control="catalog">${gastroIcon("grid")}<span>Katalog</span></button>
+      <button type="button" class="gf-floating-button" data-gf-share data-gf-control="share">${gastroIcon("share")}<span>Teilen</span></button>
+      <button type="button" class="gf-floating-button gf-floating-icon" data-gf-menu data-gf-control="menu" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Menü öffnen">${gastroIcon("menu")}</button>
     </div>
     <aside class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
       <div class="gf-cockpit-header">
         <div class="gf-cockpit-brand"><span class="gf-cockpit-mark">${gastroIcon("fork")}</span><div><strong>Gastrofinder</strong><span>Genussatlas</span></div></div>
-        <button type="button" class="gf-cockpit-toggle" data-gf-cockpit-toggle aria-expanded="true" aria-label="Cockpit einklappen">${gastroIcon("arrow")}</button>
+        <button type="button" class="gf-cockpit-toggle" data-gf-cockpit-toggle data-gf-control="cockpit" aria-expanded="true" aria-label="Cockpit einklappen">${gastroIcon("arrow")}</button>
       </div>
       <div class="gf-cockpit-search">
         <label class="gf-visually-hidden" for="gf-${uid}-search">Name, Ort oder Küche suchen</label>
@@ -1295,10 +1295,10 @@ function renderGastroShell(root, state) {
       <div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div>
       <div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div>
       <div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div>
-      <div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more>Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next>Weitere Daten laden</button></div>
+      <div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more data-gf-control="show-more">Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next data-gf-control="load-next">Weitere Daten laden</button></div>
     </aside>
-    <button type="button" class="gf-edge-tab" data-gf-edge-tab aria-controls="gf-${uid}-cockpit" hidden>${gastroIcon("arrow")}<span>Ergebnisse öffnen</span></button>
-    <button type="button" class="gf-bottom-switcher" data-gf-bottom-switcher aria-pressed="false">${gastroIcon("map")}<span>Genusskarte</span></button>
+    <button type="button" class="gf-edge-tab" data-gf-edge-tab data-gf-control="cockpit-edge" aria-controls="gf-${uid}-cockpit" hidden>${gastroIcon("arrow")}<span>Ergebnisse öffnen</span></button>
+    <button type="button" class="gf-bottom-switcher" data-gf-bottom-switcher data-gf-control="mobile-switcher" aria-pressed="false">${gastroIcon("map")}<span>Genusskarte</span></button>
     <div class="gf-map-controls" data-gf="map-controls" aria-label="Kartensteuerung"></div>
     <p class="gf-status" data-gf="status" role="status" aria-live="polite"></p>
     <div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div>

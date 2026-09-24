@@ -41,3 +41,15 @@ Der Initialaufruf von `/app/dzt` liefert lokal ohne Relay einen erwarteten 404. 
 ## Ergebnisprotokoll
 
 `window.gastroFixtureResult` enthält `mode`, `requests`, `unexpected` und `errors`. Der tatsächliche Screenshot-/Geometrie-Befund wird unter `tests/evidence/` abgelegt, nicht im App-Paket.
+
+## Autorisierte Nicht-Loopback-Prüfung
+
+Für die App-Browserprüfung wird **nicht** `localhost` oder `127.0.0.1` verwendet. Der Loopback-Zweig von `app-base.js` lädt die lokale Config und entspricht nicht dem autorisierten Instanzpfad. Der lokale ODAS-Testzugang ist:
+
+```text
+http://odas-dev.invalid:3000
+```
+
+Die read-only Inventurprüfung am ODAS-Testziel wird unter `tests/evidence/redesign-browser.md` dokumentiert. Für die nicht veröffentlichte Gastrofinder-Implementierung wird die App nur über eine temporäre, nicht eingecheckte Nicht-Loopback-Fixture-Instanz geprüft; dabei wird der Nicht-Loopback-`app-base.js`-Pfad mit einer temporären `app/config` geprüft. Das ist kein Live-Nachweis und keine Veröffentlichung.
+
+Die Fixture-Screenshots `redesign-*.png` sind statische, aus dem tatsächlich gerenderten Fixture-DOM erzeugte Layout-Snapshots mit schematischem Kartenhintergrund. `redesign-live-ip.png` ist der direkt gerenderte Browserstand am Nicht-Loopback-Testhost mit synthetischen Daten. Alle Bilder tragen den Banner `Synthetische Testdaten · keine Live-Daten`.
