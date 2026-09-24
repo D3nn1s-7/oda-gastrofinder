@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 const { loadApp, loadAppWithFixtures, validConfig } = require("./helpers.cjs");
 
 const REGION = { ort: "Berlin", lat: 52.52, lng: 13.405, radiusKm: 25 };
@@ -191,4 +192,33 @@ test("serverseitig gerenderter Markdown-Inhalt wird nicht erneut escaped", () =>
   const api = loadApp({ configData: { kontakt: "<p>Portal <strong>ODAS</strong></p>" } });
   const markup = api.renderPageOverride("kontakt");
   assert.match(markup, /<p>Portal <strong>ODAS<\/strong><\/p>/);
+});
+
+test("app.js kann ohne Lexical-Kollision zweimal geladen werden", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../app/app.js"), "utf8");
+  const context = vm.createContext({ console, URL, URLSearchParams, AbortController, Map, Set });
+  vm.runInContext(source, context, { filename: "app/app.js" });
+  assert.doesNotThrow(() => vm.runInContext(source, context, { filename: "app/app.js" }));
+});
+
+test("eine ungültige Konfiguration beendet den Fullscreen-Zustand", () => {
+  const classes = new Set(["gf-app-fullscreen"]);
+  const document = { body: { classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name) } } };
+  const api = loadApp({ document });
+  const root = { innerHTML: "", classList: { remove() {} } };
+  api.app({}, root);
+  assert.equal(classes.has("gf-app-fullscreen"), false);
+});
+
+test("mobiles Cockpit bleibt nach Einklappen über den Bottom-Switcher bedienbar", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const root = { classList: { toggle() {}, remove() {} }, querySelector: () => null };
+  state.runtime.mobileView = "list";
+  root.classList.add = () => {};
+  api.setGastroCockpitCollapsed(root, state, true);
+  assert.equal(state.runtime.mobileView, "map");
+  api.setGastroMobileView(root, state, "list");
+  assert.equal(state.runtime.mobileView, "list");
+  assert.equal(state.runtime.cockpitCollapsed, false);
 });

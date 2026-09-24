@@ -4,8 +4,8 @@ Diese Datei dokumentiert die gezielten, lokalen Browserfälle. Die DZT-Antworten
 
 ## Start
 
-1. Vom Projektordner `oda-gastrofinder/` aus einen statischen Server auf einem freien localhost-Port starten.
-2. `http://127.0.0.1:<port>/app/` öffnen.
+1. Vom Projektordner `oda-gastrofinder/` aus einen temporären Server auf einer Nicht-Loopback-Adresse starten (beim Testziel `odas-dev.invalid`).
+2. `http://odas-dev.invalid:<port>/app/` öffnen; `localhost` und `127.0.0.1` sind für diesen Check ausgeschlossen.
 3. `tests/fixtures.js` und danach `tests/browser-fixtures.js` als lokale Testskripte laden.
 4. `await installGastroFixture("success")` ausführen.
 

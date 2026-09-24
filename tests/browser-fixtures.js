@@ -174,7 +174,7 @@
       configData = state.config;
       const root = document.getElementById("main-content");
       if (root && root.gastroState) {
-        if (typeof onPageLeave === "function") onPageLeave("startseite");
+        if (typeof onPageLeave === "function") onPageLeave("beschreibung");
         root.gastroState = null;
       }
       if (typeof loadPage === "function") return loadPage("startseite");

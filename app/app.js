@@ -1664,7 +1664,12 @@ function applyGastroFilterChange(state, root, changes) {
 
 function setGastroCockpitCollapsed(root, state, collapsed) {
   if (!root || !state || !state.runtime) return;
-  state.runtime.cockpitCollapsed = Boolean(collapsed);
+  const leavingMobileList = Boolean(collapsed && state.runtime.mobileView === "list");
+  if (leavingMobileList) {
+    state.runtime.mobileView = "map";
+    if (root.classList && root.classList.remove) root.classList.remove("gf-mobile-list");
+  }
+  state.runtime.cockpitCollapsed = leavingMobileList ? false : Boolean(collapsed);
   if (root.classList && root.classList.toggle) root.classList.toggle("gf-cockpit-collapsed", state.runtime.cockpitCollapsed);
   const edge = root.querySelector("[data-gf-edge-tab]");
   if (edge) {
@@ -1682,6 +1687,10 @@ function setGastroCockpitCollapsed(root, state, collapsed) {
 function setGastroMobileView(root, state, view) {
   if (!root || !state || !state.runtime || (view !== "map" && view !== "list")) return;
   state.runtime.mobileView = view;
+  if (view === "list") {
+    state.runtime.cockpitCollapsed = false;
+    if (root.classList && root.classList.remove) root.classList.remove("gf-cockpit-collapsed");
+  }
   if (root.classList && root.classList.toggle) root.classList.toggle("gf-mobile-list", view === "list");
   const button = root.querySelector("[data-gf-bottom-switcher]");
   if (button) {
@@ -2023,6 +2032,8 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
     const previous = enclosingHtmlDivElement.gastroState;
     if (previous) disposeGastroRuntime(previous);
     enclosingHtmlDivElement.gastroState = null;
+    setGastroFullscreen(enclosingHtmlDivElement, false);
+    if (enclosingHtmlDivElement.classList && enclosingHtmlDivElement.classList.remove) enclosingHtmlDivElement.classList.remove("gf-root");
     const message = error && error.message ? error.message : "Die App ist nicht konfiguriert.";
     enclosingHtmlDivElement.innerHTML = `<div class="alert alert-danger" role="alert">${escapeHtml(message)}</div>`;
     return;
@@ -2087,15 +2098,18 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
   }
 }
 
-const GASTRO_SECONDARY_PAGES = {
-  beschreibung: { title: "Über diese App & Methodik", icon: "info" },
-  kontakt: { title: "Kontakt & Ansprechpartner", icon: "mail" },
-  datenschutz: { title: "Datenschutzerklärung", icon: "shield" },
-  impressum: { title: "Impressum", icon: "file" },
-};
+function getGastroSecondaryPageInfo(page) {
+  const pages = {
+    beschreibung: { title: "Über diese App & Methodik", icon: "info" },
+    kontakt: { title: "Kontakt & Ansprechpartner", icon: "mail" },
+    datenschutz: { title: "Datenschutzerklärung", icon: "shield" },
+    impressum: { title: "Impressum", icon: "file" },
+  };
+  return pages[page] || null;
+}
 
 function renderGastroSecondaryPage(page, content) {
-  const info = GASTRO_SECONDARY_PAGES[page];
+  const info = getGastroSecondaryPageInfo(page);
   if (!info) return null;
   const body = content == null || content === "" ? "Informationen zu dieser Seite sind derzeit nicht verfügbar." : String(content);
   return `<div class="gf-secondary-wrapper"><div class="gf-secondary-card" id="secondarySites"><div class="gf-secondary-nav"><a href="#startseite" class="gf-secondary-back-link">${gastroIcon("arrow")}<span>Zurück zur Karte</span></a><span class="gf-secondary-badge">DZT · ODAS</span></div><div class="gf-secondary-header"><span class="gf-secondary-icon">${gastroIcon(info.icon)}</span><div><p class="gf-eyebrow">Gastrofinder</p><h1 class="gf-secondary-title">${escapeHtml(info.title)}</h1></div></div><div class="gf-secondary-body">${body}</div></div></div>`;
@@ -2103,7 +2117,7 @@ function renderGastroSecondaryPage(page, content) {
 
 function renderPageOverride(page) {
   if (page === "startseite") return null;
-  const info = GASTRO_SECONDARY_PAGES[page];
+  const info = getGastroSecondaryPageInfo(page);
   if (!info) return null;
   let content = typeof configData !== "undefined" && configData ? configData[page] : "";
   if (Array.isArray(content)) {

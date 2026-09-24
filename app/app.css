@@ -150,6 +150,7 @@ body.gf-app-fullscreen #main-content {
   position: fixed;
   inset: 0;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
   overflow: hidden;
   isolation: isolate;
