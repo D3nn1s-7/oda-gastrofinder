@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetische Gastrofinder-Testillustration</title>
+  <desc id="desc">Keine Live-Daten. Eigene Testgrafik für lokale Browserprüfungen.</desc>
+  <rect width="640" height="420" fill="#e8efe1"/>
+  <circle cx="510" cy="96" r="58" fill="#f3d9a8"/>
+  <path d="M0 310c120-75 205-38 302 10 105 52 194 35 338-36v136H0Z" fill="#b8cdb0"/>
+  <path d="M0 345c136-54 240-20 333 20 102 44 192 26 307-30v85H0Z" fill="#6e9274"/>
+  <path d="M168 286c62-50 129-50 194 0l-22 28H190Z" fill="#254b3b"/>
+  <circle cx="235" cy="248" r="12" fill="#fdfbf6"/><circle cx="294" cy="248" r="12" fill="#fdfbf6"/>
+  <text x="32" y="52" fill="#254b3b" font-family="sans-serif" font-size="20" font-weight="700">Synthetische Testillustration</text>
+  <text x="32" y="78" fill="#58675e" font-family="sans-serif" font-size="14">Lokaler Browser-Fixture · keine DZT-Livequelle</text>
+</svg>

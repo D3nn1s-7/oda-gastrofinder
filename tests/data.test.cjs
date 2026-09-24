@@ -14,6 +14,12 @@ function normalize(api, rows, stage = "detail") {
   return plain(api.normalizeDztRows(rows, REGION, stage));
 }
 
+test("Standard-Fixtures behalten einen lesbaren Namen", () => {
+  const api = loadAppWithFixtures();
+  const result = normalize(api, api.makeGastroRows());
+  assert.equal(result.pois[0].name, "Synthetic Restaurant");
+});
+
 test("nur exakte Restaurant- und Café-Typen werden zugelassen", () => {
   const api = loadAppWithFixtures();
   const rejected = api.makeGastroRows({ types: ["https://schema.org/FoodEstablishment"] });

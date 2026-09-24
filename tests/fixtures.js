@@ -62,7 +62,7 @@ function makeGastroRows(options = {}) {
 
   for (const type of types || []) root("http://www.w3.org/1999/02/22-rdf-syntax-ns#type", fixtureTerm(type, "uri"));
 
-  const names = options.names || (options.name === null || options.name === undefined
+  const names = options.names || (options.name === null
     ? []
     : [{ value: options.name === undefined ? "Synthetic Restaurant" : options.name, lang: options.lang || "" }]);
   for (const name of names) {

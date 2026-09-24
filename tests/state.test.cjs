@@ -126,10 +126,12 @@ test("Ein Klick auf Nachladen ruft genau eine Relay-Seite ab und schützt bei Fe
   const api = loadAppWithFixtures({ fetch: async () => new Response(JSON.stringify({ results: { bindings: api.makeGastroPage(0, 1) } }), { status: 200 }) });
   const state = newState(api);
   let notifications = 0;
-  await api.loadNextGastroPage(state, () => { notifications += 1; });
+  let busyDuringNotify = null;
+  await api.loadNextGastroPage(state, () => { notifications += 1; busyDuringNotify = state.page.busy; });
   assert.equal(state.byId.size, 1);
   assert.equal(state.page.loaded, true);
   assert.equal(notifications, 1);
+  assert.equal(busyDuringNotify, false);
   assert.equal(state.page.busy, false);
 
   const before = state.page.cursor;

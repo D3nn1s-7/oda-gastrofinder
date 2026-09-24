@@ -48,13 +48,15 @@ test("eine verspätete A-Antwort überschreibt weder B-Details noch den sichtbar
   ];
   const state = stateFor(api, rows);
   let notifications = 0;
+  let busyDuringNotify = null;
   const a = api.selectGastroPoi(state, "https://example.org/a", () => { notifications += 1; });
   await settle();
-  const b = api.selectGastroPoi(state, "https://example.org/b", () => { notifications += 1; });
+  const b = api.selectGastroPoi(state, "https://example.org/b", () => { notifications += 1; busyDuringNotify = state.detail.busy; });
   await settle();
   pending.b.resolve(responseFor(api, "https://example.org/b"));
   await b;
   assert.equal(state.selectedId, "https://example.org/b");
+  assert.equal(busyDuringNotify, false);
   assert.equal(state.detail.busy, false);
   assert.ok(state.details.has("https://example.org/b"));
 
