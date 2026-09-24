@@ -1300,25 +1300,41 @@ function gastroNoPhoto(label = "Gastrofinder") {
 
 function renderGastroCard(poi, uid = "gf-card", selected = false) {
   const item = poi || {};
-  const image = (item.images || []).find(gastroImageIsUsable);
-  const media = image
-    ? `<img class="gf-card-image" src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || item.name || "Gastrofinder-Bild")}" loading="lazy">`
-    : gastroNoPhoto(item.name || "Gastrofinder");
+  const imgUrl = item.imageUrl || (item.images && item.images[0] && (item.images[0].url || item.images[0]["schema:contentUrl"])) || "";
+  const media = imgUrl
+    ? `<img class="gf-card-thumb-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name || "Gastrofinder-Bild")}" loading="lazy">`
+    : `<div class="gf-card-thumb-fallback">${item.isCafe ? "☕" : "🍴"}</div>`;
   const address = item.address || {};
-  const place = [address.locality, address.postalCode, address.street].filter(Boolean).join(" · ") || "Ort nicht angegeben";
+  const locality = item.city || address.locality || address.city || "";
+  const street = item.street || address.street || "";
+  const place = [locality, street].filter(Boolean).join(" · ") || (item.city || "Ort nicht angegeben");
   const distance = Number.isFinite(Number(item.distanceKm))
-    ? `${Number(item.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km Luftlinie`
-    : "Entfernung nicht berechnet";
-  const cuisine = (item.cuisines || []).length ? item.cuisines.join(", ") : "Küche nicht angegeben";
+    ? `${Number(item.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km`
+    : (item.distanceKm != null ? `${item.distanceKm} km` : "");
+  const cuisine = Array.isArray(item.cuisines)
+    ? item.cuisines.join(", ")
+    : (item.cuisines || "");
   const typeLabels = gastroTypeLabels(item);
-  return `<article id="${escapeHtml(`${uid}-card-${gastroDomToken(item.id)}`)}" class="gf-card${selected ? " is-selected" : ""}" data-gf-card>
-    <div class="gf-card-media">${media}</div>
-    <div class="gf-card-body">
-      <div class="gf-card-heading"><h3>${escapeHtml(item.name || "Name nicht angegeben")}</h3><span class="gf-distance">${escapeHtml(distance)}</span></div>
-      <div class="gf-badges">${typeLabels.map((label) => `<span class="gf-badge${label === "Café" ? " gf-badge-cafe" : ""}">${escapeHtml(label)}</span>`).join("")}</div>
-      <p class="gf-card-place">${escapeHtml(place)}</p>
-      <p class="gf-card-cuisine">${escapeHtml(cuisine)}</p>
-      <button type="button" class="gf-card-select" data-gf-select data-gf-control="card-details" data-gf-id="${escapeHtml(item.id || "")}" aria-pressed="${selected ? "true" : "false"}">${selected ? "Ausgewählt" : "Details ansehen"}</button>
+
+  return `<article id="${escapeHtml(`${uid}-card-${gastroDomToken(item.id)}`)}" class="gf-card gf-clean-card${selected ? " is-selected" : ""}" data-gf-card data-gf-id="${escapeHtml(item.id || "")}">
+    <div class="gf-card-thumb-wrap">${media}</div>
+    <div class="gf-card-content">
+      <div class="gf-card-heading-wrap">
+        <h3 class="gf-card-heading" title="${escapeHtml(item.name || "")}">${escapeHtml(item.name || "Name nicht angegeben")}</h3>
+        <div class="gf-card-meta">
+          ${place ? `<span>${escapeHtml(place)}</span>` : ""}
+          ${distance ? `<span class="gf-distance-badge">&bull; <strong>${escapeHtml(distance)}</strong></span>` : ""}
+        </div>
+      </div>
+      <div class="gf-badges">
+        ${typeLabels.map((label) => `<span class="gf-badge${label === "Café" ? " gf-badge-cafe" : ""}">${escapeHtml(label)}</span>`).join("")}
+        ${cuisine ? `<span class="gf-badge gf-badge-cuisine">${escapeHtml(cuisine)}</span>` : ""}
+      </div>
+      <div class="gf-card-action">
+        <button type="button" class="gf-card-select gf-btn-detail-link" data-gf-select data-gf-control="card-details" data-gf-id="${escapeHtml(item.id || "")}" aria-pressed="${selected ? "true" : "false"}">
+          Details ansehen »
+        </button>
+      </div>
     </div>
   </article>`;
 }
@@ -1470,6 +1486,17 @@ function updateGastroStatus(root, state, view) {
 
 function updateGastroView(root, state) {
   if (!root || !state || typeof root.querySelector !== "function") return;
+  const brandbar = root.querySelector('[data-gf-brandbar]');
+  if (brandbar && state.region) {
+    const regionName = state.region.ort || "Region";
+    const radius = `${state.region.radiusKm || 25} km Umkreis`;
+    const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
+    brandbar.innerHTML = `
+      <strong>${escapeHtml(appTitle)}</strong>
+      <span>Genussatlas · ${escapeHtml(regionName)}</span>
+      <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+    `;
+  }
   const view = deriveGastroView(state);
   const focusedId = typeof document !== "undefined" && document.activeElement && typeof document.activeElement.getAttribute === "function"
     ? document.activeElement.getAttribute("data-gf-id")
