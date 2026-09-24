@@ -90,6 +90,103 @@ test("Detailstatus loading erfindet keine fehlenden Angaben", () => {
   assert.match(ready, /Café Atlas/);
 });
 
+test("mehrteilige, saisonale und über Mitternacht reichende Zeiten bleiben vollständig", () => {
+  const api = loadApp();
+  const markup = api.renderGastroDetails(samplePoi({
+    openingHours: [
+      { days: ["https://schema.org/Monday"], opens: "11:00", closes: "14:00" },
+      { days: ["https://schema.org/Monday"], opens: "17:00", closes: "22:00" },
+      { days: ["https://schema.org/Friday"], opens: "22:00", closes: "02:00", validFrom: "2026-01-01", validThrough: "2026-12-31" },
+    ],
+  }), "gf-test", "ready");
+  assert.match(markup, /<strong>Montag<\/strong>: 11:00–14:00/);
+  assert.match(markup, /<strong>Montag<\/strong>: 17:00–22:00/);
+  assert.match(markup, /<strong>Freitag<\/strong>: 22:00–02:00 bis zum Folgetag/);
+  assert.match(markup, /gültig 2026-01-01 bis 2026-12-31/);
+  assert.doesNotMatch(markup, /Jetzt geöffnet|geschlossen/);
+});
+
+test("Beschreibungen mit HTML-Fragmenten werden als Text ausgegeben", () => {
+  const api = loadApp();
+  const markup = api.renderGastroDetails(samplePoi({
+    description: '<script>window.__gastroXss=1</script><b>safe</b>',
+  }), "gf-test", "ready");
+  assert.match(markup, /&lt;script&gt;/);
+  assert.doesNotMatch(markup, /<script\b|<b>safe<\/b>/);
+});
+
+test("das mobile Panel speichert die ausdrückliche Kompakt-/Vergrößert-Auswahl", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  let expanded = null;
+  const root = { querySelector: () => ({ setAttribute: (_name, value) => { expanded = value; } }) };
+  api.setGastroSheet(root, state, "expanded");
+  assert.equal(state.sheet, "expanded");
+  assert.equal(expanded, "true");
+  api.setGastroSheet(root, state, "compact");
+  assert.equal(state.sheet, "compact");
+  assert.equal(expanded, "false");
+});
+
+test("Teilen verwendet die kanonische Instanz-URL und fällt bei Clipboard-Fehlern auf ein Feld zurück", async () => {
+  let copied = null;
+  const api = loadApp({
+    window: { location: { origin: "https://portal.example", pathname: "/view/p/gastrofinder/i/", search: "?x=1" } },
+    navigator: { clipboard: { writeText: async (value) => { copied = value; throw new Error("denied"); } } },
+  });
+  const appended = [];
+  const root = { querySelector: () => null, appendChild: (node) => appended.push(node) };
+  const result = await api.shareGastroInstance(root);
+  assert.equal(copied, "https://portal.example/view/p/gastrofinder/i/#startseite");
+  assert.equal(result.copied, false);
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].readOnly, true);
+  assert.equal(appended[0].value, copied);
+});
+
+test("Galerie öffnet modal, schließt und stellt den Auslöserfokus wieder her", () => {
+  const listeners = {};
+  const dialog = {
+    open: false,
+    isConnected: true,
+    innerHTML: "",
+    setAttribute() {},
+    addEventListener(type, handler) { listeners[type] = handler; },
+    showModal() { this.open = true; },
+    close() { this.open = false; if (listeners.close) listeners.close(); },
+    focus() {},
+  };
+  let active = null;
+  const opener = { isConnected: true, focus() { active = this; } };
+  const document = {
+    createElement(tag) { return tag === "dialog" ? dialog : { setAttribute() {}, addEventListener() {} }; },
+  };
+  const api = loadApp({ document });
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  state.selectedId = "https://example.org/x";
+  state.byId.set(state.selectedId, samplePoi({
+    images: [{ url: "https://example.org/photo.jpg", title: "Bild", credit: "Test", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/" }],
+  }));
+  const root = { querySelector: () => null };
+  assert.equal(api.openGastroGallery(root, state, opener), true);
+  assert.equal(dialog.open, true);
+  api.closeGastroGallery(root, state);
+  assert.equal(dialog.open, false);
+  assert.equal(active, opener);
+  assert.equal(state.runtime.gallery, null);
+});
+
+test("Schließen der Details kehrt zum Auslöser oder zur Ergebnisüberschrift zurück", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  let focused = null;
+  const opener = { isConnected: true, focus() { focused = this; } };
+  state.runtime.detailOpener = opener;
+  api.closeGastroDetails(state, { querySelector: () => null });
+  assert.equal(focused, opener);
+  assert.equal(state.selectedId, null);
+});
+
 test("eine leere Änderungsauswahl erzeugt keine UI-Exception", () => {
   const api = loadAppWithFixtures();
   const state = api.createGastroState(validConfig.apiurls[0].url, REGION);

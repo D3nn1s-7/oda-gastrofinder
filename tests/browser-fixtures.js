@@ -15,12 +15,20 @@
     if (mode === "all-invalid") {
       return makeGastroPage(start, count, { lat: 0, lng: 0 });
     }
-    const imageMode = mode === "image-fail" && start === 0;
+    if (mode === "xss") {
+      return makeGastroPage(start, count, {
+        name: '<img src=x onerror="window.__gastroXss=1">',
+        description: '<script>window.__gastroXssDescription=1</script>',
+      });
+    }
+    const imageMode = (mode === "image-fail" || mode === "image") && start === 0;
     return makeGastroPage(start, count, imageMode ? {
       images: [{
         id: "fixture-image",
-        url: "http://127.0.0.1:8765/tests/fixtures/broken-image.png",
-        title: "Absichtlich defektes Testbild",
+        url: mode === "image-fail"
+          ? "http://127.0.0.1:8765/tests/fixtures/broken-image.png"
+          : "http://127.0.0.1:8765/tests/fixtures/photo.svg",
+        title: mode === "image-fail" ? "Absichtlich defektes Testbild" : "Synthetische Testillustration",
         credit: "Gastrofinder Testfixture",
         licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
       }],
@@ -71,7 +79,23 @@
       const detailMatch = query.match(/VALUES\s+\?id\s+\{\s+<([^>]+)>/);
       if (detailMatch) {
         if (mode === "detail-error") return new Response("detail unavailable", { status: 500 });
-        return responseJson(makeGastroRows({ id: detailMatch[1] }));
+        const detailImages = mode === "image" || mode === "image-fail" ? [{
+          id: "fixture-detail-image",
+          url: mode === "image-fail"
+            ? "http://127.0.0.1:8765/tests/fixtures/broken-image.png"
+            : "http://127.0.0.1:8765/tests/fixtures/photo.svg",
+          title: mode === "image-fail" ? "Absichtlich defektes Testbild" : "Synthetische Testillustration",
+          credit: "Gastrofinder Testfixture",
+          licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+        }] : [];
+        return responseJson(makeGastroRows({
+          id: detailMatch[1],
+          images: detailImages,
+          ...(mode === "xss" ? {
+            name: '<img src=x onerror="window.__gastroXss=1">',
+            description: '<script>window.__gastroXssDescription=1</script>',
+          } : {}),
+        }));
       }
       if (mode === "empty") return responseJson([]);
       if (mode === "error-401") return new Response("unauthorized", { status: 401 });

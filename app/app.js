@@ -771,6 +771,7 @@ function createGastroState(sourceUrl, region) {
       mapAreaCircle: null,
       mapError: null,
       lastSelectedId: null,
+      detailOpener: null,
     },
   };
 }
@@ -951,8 +952,9 @@ async function loadNextGastroPage(state, notify = () => {}) {
   }
 }
 
-function closeGastroDetails(state) {
+function closeGastroDetails(state, root = null) {
   if (!state || !state.detail) return;
+  const opener = state.runtime && state.runtime.detailOpener;
   if (state.runtime && state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") {
     state.runtime.detailAbort.abort();
   }
@@ -962,6 +964,13 @@ function closeGastroDetails(state) {
   state.detail.busy = false;
   state.detail.error = null;
   state.detail.retryAt = 0;
+  if (state.runtime) state.runtime.detailOpener = null;
+  if (opener && opener.isConnected && typeof opener.focus === "function") {
+    opener.focus();
+  } else if (root && root.querySelector) {
+    const heading = root.querySelector('[data-gf="results-heading"]');
+    if (heading && typeof heading.focus === "function") heading.focus();
+  }
 }
 
 async function selectGastroPoi(state, id, notify = () => {}) {
@@ -1059,6 +1068,7 @@ function disposeGastroRuntime(state) {
   runtime.markerLayer = null;
   runtime.mapAreaCircle = null;
   runtime.lastSelectedId = null;
+  runtime.detailOpener = null;
   runtime.cluster = null;
   state.page.busy = false;
   state.detail.busy = false;
@@ -1095,6 +1105,7 @@ function gastroIcon(name) {
     share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v8h14v-8"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
     external: '<path d="M14 3h7v7m0-7L10 14M10 3H3v18h18v-7"/>',
+    arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
   };
   return `<svg class="gf-icon" viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.pin}</svg>`;
 }
@@ -1151,7 +1162,7 @@ function gastroDayLabel(value) {
 
 function renderGastroHours(hours) {
   if (!Array.isArray(hours) || !hours.length) return "Öffnungszeiten nicht angegeben";
-  return hours.map((entry) => {
+  return `<ul class="gf-hours-list">${hours.map((entry) => {
     const days = (entry.days || []).map(gastroDayLabel).join(", ") || "Tag nicht angegeben";
     const opens = entry.opens || "nicht angegeben";
     const closes = entry.closes || "nicht angegeben";
@@ -1165,7 +1176,7 @@ function renderGastroHours(hours) {
       ? ` · gültig ${escapeHtml(entry.validFrom || "unbekannt")} bis ${escapeHtml(entry.validThrough || "unbekannt")}`
       : "";
     return `<li><strong>${escapeHtml(days)}</strong>: ${escapeHtml(timeText)}${escapeHtml(overnight)}${validity}</li>`;
-  }).join("");
+  }).join("")}</ul>`;
 }
 
 function renderGastroDetails(poi, uid = "gf-detail", status = "loading") {
@@ -1206,8 +1217,25 @@ function renderGastroShell(root, state) {
   const radius = state.region ? `${state.region.radiusKm} km Umkreis` : "Umkreis wird geladen";
   root.innerHTML = `<section class="gf-root gf-shell" aria-label="Restaurants und Cafés im Suchgebiet">
     <div class="gf-toolbar" data-gf="toolbar"><div class="gf-toolbar-place">${gastroIcon("pin")}<div><strong>${escapeHtml(regionName)}</strong><span>${escapeHtml(radius)} · vom Portal festgelegt</span></div></div><div class="gf-toolbar-actions"><div class="gf-segment" role="group" aria-label="Ansicht"><button type="button" data-gf-view="map" aria-pressed="true">${gastroIcon("map")} Karte</button><button type="button" data-gf-view="catalog" aria-pressed="false">${gastroIcon("grid")} Katalog</button></div><button type="button" class="gf-button gf-button-secondary" data-gf-share>${gastroIcon("share")} Teilen</button></div></div>
-    <div class="gf-workspace"><div class="gf-map" data-gf="map" aria-label="Karte der geladenen Treffer"><div class="gf-map-fallback" data-gf="map-fallback">Karte wird geladen …</div><button type="button" class="gf-area-button" data-gf-show-area>Gebiet anzeigen</button></div><section class="gf-results" data-gf="results" aria-label="Ergebnisse"><div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div><div class="gf-filters"><label for="gf-${uid}-search">Name oder Ort</label><div class="gf-search">${gastroIcon("search")}<input id="gf-${uid}-search" data-gf-search type="search" placeholder="Name oder Ort suchen" autocomplete="off"></div><div class="gf-filter-buttons" role="group" aria-label="Typ"><button type="button" data-gf-filter="all" aria-pressed="true">Alle <span data-gf-count="all">0</span></button><button type="button" data-gf-filter="restaurant" aria-pressed="false">Restaurants <span data-gf-count="restaurant">0</span></button><button type="button" data-gf-filter="cafe" aria-pressed="false">Cafés <span data-gf-count="cafe">0</span></button></div><div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div></div><div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div><div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more>Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next>Weitere Daten laden</button></div></section><aside class="gf-details" data-gf="details" aria-label="Betriebsdetails" hidden></aside></div><p class="gf-status" data-gf="status" role="status" aria-live="polite"></p><div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div></section>`;
+    <div class="gf-workspace"><div class="gf-map" data-gf="map" aria-label="Karte der geladenen Treffer"><div class="gf-map-fallback" data-gf="map-fallback">Karte wird geladen …</div><button type="button" class="gf-area-button" data-gf-show-area>Gebiet anzeigen</button></div><section class="gf-results" data-gf="results" aria-label="Ergebnisse"><div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div><button type="button" class="gf-sheet-toggle" data-gf-sheet-toggle aria-expanded="false">Ergebnisbereich vergrößern</button><div class="gf-filters"><label for="gf-${uid}-search">Name oder Ort</label><div class="gf-search">${gastroIcon("search")}<input id="gf-${uid}-search" data-gf-search type="search" placeholder="Name oder Ort suchen" autocomplete="off"></div><div class="gf-filter-buttons" role="group" aria-label="Typ"><button type="button" data-gf-filter="all" aria-pressed="true">Alle <span data-gf-count="all">0</span></button><button type="button" data-gf-filter="restaurant" aria-pressed="false">Restaurants <span data-gf-count="restaurant">0</span></button><button type="button" data-gf-filter="cafe" aria-pressed="false">Cafés <span data-gf-count="cafe">0</span></button></div><div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div></div><div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div><div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more>Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next>Weitere Daten laden</button></div></section><aside class="gf-details" data-gf="details" aria-label="Betriebsdetails" hidden></aside></div><p class="gf-status" data-gf="status" role="status" aria-live="polite"></p><div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div></section>`;
   if (typeof root.querySelector === "function") bindGastroShellEvents(root, state);
+}
+
+function bindGastroImageFallbacks(root) {
+  if (!root || typeof root.querySelectorAll !== "function") return;
+  for (const image of root.querySelectorAll("img.gf-card-image, .gf-gallery-item img, .gf-detail-content > .gf-gallery img")) {
+    addGastroListener(image, "error", () => {
+      const cardMedia = image.closest(".gf-card-media");
+      if (cardMedia) {
+        const card = image.closest("[data-gf-card]");
+        const heading = card && card.querySelector("h3");
+        cardMedia.innerHTML = gastroNoPhoto(heading ? heading.textContent : "Gastrofinder");
+        return;
+      }
+      const figure = image.closest(".gf-gallery-figure");
+      if (figure) figure.innerHTML = `<div class="gf-no-photo" aria-live="polite">${gastroIcon("fork")}<span>Bild nicht verfügbar</span></div>`;
+    }, { runtime: { events: null } });
+  }
 }
 
 function updateGastroStatus(root, state, view) {
@@ -1230,6 +1258,8 @@ function updateGastroStatus(root, state, view) {
 function updateGastroView(root, state) {
   if (!root || !state || typeof root.querySelector !== "function") return;
   const view = deriveGastroView(state);
+  const scroll = root.querySelector('[data-gf="results-scroll"]');
+  const previousScroll = scroll ? scroll.scrollTop : 0;
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
     const limit = state.view === "catalog" ? state.visible.catalog : state.visible.list;
@@ -1237,6 +1267,11 @@ function updateGastroView(root, state) {
     list.innerHTML = visible.length
       ? visible.map((poi) => renderGastroCard(poi, state.runtime.uid, poi.id === state.selectedId)).join("")
       : `<div class="gf-empty">${state.page.done ? "Keine passenden Orte gefunden." : "Keine passenden Orte im geladenen Bestand. Weitere Daten können noch folgen."}</div>`;
+  }
+  if (scroll) {
+    const key = state.view === "catalog" ? "catalog" : "list";
+    state.positions[key] = previousScroll;
+    scroll.scrollTop = state.positions[key] || 0;
   }
   const count = root.querySelector('[data-gf="count"]');
   if (count) count.textContent = `${view.pois.length} ${view.pois.length === 1 ? "Ort" : "Orte"}`;
@@ -1288,8 +1323,67 @@ function updateGastroView(root, state) {
       button.setAttribute("aria-pressed", button.getAttribute("data-gf-view") === state.view ? "true" : "false");
     }
   }
+  bindGastroImageFallbacks(root);
   updateGastroStatus(root, state, view);
   updateGastroMap(root, state, view);
+}
+
+function galleryImageMarkup(image) {
+  const sourceUrl = safeHttpUrl(image.sourceUrl);
+  return `<figure class="gf-gallery-figure"><img src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || "Gastrofinder-Bild")}"><figcaption><strong>${escapeHtml(image.title || "Bild")}</strong><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle ${gastroIcon("external")}</a>` : ""}<a href="${escapeHtml(safeHttpUrl(image.licenseUrl))}" target="_blank" rel="noopener noreferrer">Lizenz ${gastroIcon("external")}</a></figcaption></figure>`;
+}
+
+function openGastroGallery(root, state, opener = null) {
+  if (typeof document === "undefined" || !state || !state.selectedId) return false;
+  const poi = state.details.get(state.selectedId) || state.byId.get(state.selectedId);
+  const images = (poi && poi.images || []).filter(gastroImageIsUsable);
+  if (!images.length) return false;
+  if (state.runtime.gallery) closeGastroGallery(root, state);
+  const dialog = document.createElement("dialog");
+  dialog.className = "gf-gallery-dialog";
+  dialog.setAttribute("aria-label", "Bilder des ausgewählten Betriebs");
+  const gallery = { dialog, opener: opener || document.activeElement, images, index: 0 };
+  const renderAt = (index) => {
+    gallery.index = (index + images.length) % images.length;
+    const image = images[gallery.index];
+    dialog.innerHTML = `<div class="gf-gallery-dialog-inner"><div class="gf-gallery-toolbar"><strong>Bild ${gallery.index + 1} von ${images.length}</strong><button type="button" class="gf-icon-button" data-gallery-close aria-label="Galerie schließen">${gastroIcon("close")}</button></div>${galleryImageMarkup(image)}<div class="gf-gallery-controls"><button type="button" class="gf-button gf-button-secondary" data-gallery-prev>${gastroIcon("arrow")} Vorheriges Bild</button><button type="button" class="gf-button gf-button-secondary" data-gallery-next>Nächstes Bild ${gastroIcon("arrow")}</button></div></div>`;
+  };
+  const close = () => closeGastroGallery(root, state);
+  gallery.close = close;
+  state.runtime.gallery = gallery;
+  dialog.addEventListener("close", () => {
+    if (state.runtime.gallery === gallery) closeGastroGallery(root, state, true);
+  });
+  dialog.addEventListener("click", (event) => {
+    const target = event.target && typeof event.target.closest === "function" ? event.target.closest("button") : null;
+    if (!target) return;
+    if (target.hasAttribute("data-gallery-close")) closeGastroGallery(root, state);
+    if (target.hasAttribute("data-gallery-prev")) renderAt(gallery.index - 1);
+    if (target.hasAttribute("data-gallery-next")) renderAt(gallery.index + 1);
+  });
+  renderAt(0);
+  if (typeof document !== "undefined" && document.body && typeof document.body.appendChild === "function") {
+    document.body.appendChild(dialog);
+  }
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+  return true;
+}
+
+function closeGastroGallery(root, state, fromDialogEvent = false) {
+  if (!state || !state.runtime || !state.runtime.gallery) return;
+  const gallery = state.runtime.gallery;
+  state.runtime.gallery = null;
+  if (!fromDialogEvent && gallery.dialog && typeof gallery.dialog.close === "function") {
+    try { gallery.dialog.close(); } catch (_error) { /* bereits geschlossen */ }
+  }
+  if (gallery.dialog && typeof gallery.dialog.remove === "function") gallery.dialog.remove();
+  if (gallery.opener && gallery.opener.isConnected && typeof gallery.opener.focus === "function") {
+    gallery.opener.focus();
+  } else if (root && root.querySelector) {
+    const heading = root.querySelector('[data-gf="results-heading"]');
+    if (heading && typeof heading.focus === "function") heading.focus();
+  }
 }
 
 function setGastroView(root, state, view) {
@@ -1300,6 +1394,19 @@ function setGastroView(root, state, view) {
     if (list) list.classList.toggle("gf-catalog-grid", view === "catalog");
   }
   updateGastroView(root, state);
+}
+
+function setGastroSheet(root, state, size) {
+  if (size !== "compact" && size !== "expanded") return;
+  state.sheet = size;
+  if (root && root.querySelector) {
+    const toggle = root.querySelector("[data-gf-sheet-toggle]");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", size === "expanded" ? "true" : "false");
+      toggle.textContent = size === "expanded" ? "Ergebnisbereich verkleinern" : "Ergebnisbereich vergrößern";
+    }
+    if (root.classList && root.classList.toggle) root.classList.toggle("gf-sheet-expanded", size === "expanded");
+  }
 }
 
 function addGastroListener(target, type, handler, state) {
@@ -1315,7 +1422,8 @@ function applyGastroFilterChange(state, root, changes) {
   Object.assign(state.filters, changes || {});
   const view = deriveGastroView(state);
   if (state.selectedId && !view.pois.some((poi) => poi.id === state.selectedId)) {
-    closeGastroDetails(state);
+    closeGastroGallery(root, state);
+    closeGastroDetails(state, root);
     state.runtime.filterNotice = "Die Auswahl liegt nicht mehr im aktuellen Filter.";
   }
   updateGastroView(root, state);
@@ -1339,6 +1447,10 @@ function bindGastroShellEvents(root, state) {
   if (cuisine) addGastroListener(cuisine, "change", () => applyGastroFilterChange(state, root, { cuisine: cuisine.value }), state);
   const sort = root.querySelector('[data-gf-sort]');
   if (sort) addGastroListener(sort, "change", () => { state.sort = sort.value; notify(); }, state);
+  const sheetToggle = root.querySelector("[data-gf-sheet-toggle]");
+  if (sheetToggle) addGastroListener(sheetToggle, "click", () => {
+    setGastroSheet(root, state, state.sheet === "compact" ? "expanded" : "compact");
+  }, state);
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
     addGastroListener(list, "click", (event) => {
@@ -1347,7 +1459,10 @@ function bindGastroShellEvents(root, state) {
         : null;
       if (!target) return;
       const id = target.getAttribute("data-gf-id");
-      if (id) selectGastroPoi(state, id, notify);
+      if (id) {
+        state.runtime.detailOpener = target;
+        selectGastroPoi(state, id, notify);
+      }
     }, state);
   }
   for (const button of root.querySelectorAll("[data-gf-filter]")) {
@@ -1366,8 +1481,13 @@ function bindGastroShellEvents(root, state) {
   if (share) addGastroListener(share, "click", () => shareGastroInstance(root), state);
   const details = root.querySelector('[data-gf="details"]');
   if (details) addGastroListener(details, "click", (event) => {
-    if (event.target && typeof event.target.closest === "function" && event.target.closest("[data-gf-close]")) {
-      closeGastroDetails(state);
+    const target = event.target && typeof event.target.closest === "function" ? event.target.closest("button") : null;
+    if (!target) return;
+    if (target.hasAttribute("data-gf-gallery")) {
+      openGastroGallery(root, state, target);
+    } else if (target.hasAttribute("data-gf-close")) {
+      closeGastroGallery(root, state);
+      closeGastroDetails(state, root);
       notify();
     }
   }, state);
@@ -1440,7 +1560,11 @@ function initGastroMap(root, state) {
   try {
     const L = window.L;
     const map = L.map(mapNode, { zoomControl: true, preferCanvas: true });
-    map.setView([state.region.lat, state.region.lng], 12);
+    const savedPosition = state.runtime.mapPosition;
+    map.setView(
+      savedPosition ? [savedPosition.lat, savedPosition.lng] : [state.region.lat, state.region.lng],
+      savedPosition && Number.isFinite(savedPosition.zoom) ? savedPosition.zoom : 12,
+    );
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
@@ -1491,7 +1615,10 @@ function updateGastroMap(root, state, view = null) {
       title: poi.name || "Gastrofinder-Betrieb",
     });
     marker.bindTooltip(escapeHtml(poi.name || "Name nicht angegeben"));
-    marker.on("click", () => selectGastroPoi(state, poi.id, () => updateGastroView(root, state)));
+    marker.on("click", () => {
+      state.runtime.detailOpener = null;
+      selectGastroPoi(state, poi.id, () => updateGastroView(root, state));
+    });
     layer.addLayer(marker);
     markers.set(poi.id, marker);
   }
@@ -1524,23 +1651,44 @@ function showGastroArea(state) {
 }
 
 async function shareGastroInstance(root) {
-  if (typeof window === "undefined" || !window.location) return;
+  if (typeof window === "undefined" || !window.location) return { copied: false, url: "" };
   const base = new URL(`${getOdasAppBasePath()}/`, window.location.origin);
+  base.search = "";
   base.hash = "startseite";
   const url = base.href;
+  let copied = false;
+  let shared = false;
+  let cancelled = false;
   try {
-    if (navigator.share) {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       await navigator.share({ title: "Gastrofinder", url });
-    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      shared = true;
+    } else if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       await navigator.clipboard.writeText(url);
+      copied = true;
       if (root && root.querySelector) {
         const status = root.querySelector('[data-gf="status"]');
         if (status) status.textContent = "App-Instanz-URL kopiert.";
       }
     }
-  } catch (_error) {
-    // Abgebrochene native Dialoge sind kein Fehler der App.
+  } catch (error) {
+    if (error && error.name === "AbortError") cancelled = true;
   }
+  if (!copied && !shared && !cancelled && root && typeof root.appendChild === "function") {
+    let input;
+    if (typeof document !== "undefined" && document.createElement) {
+      input = document.createElement("input");
+      input.type = "text";
+      input.readOnly = true;
+      input.value = url;
+      input.setAttribute("aria-label", "App-Instanz-URL zum manuellen Kopieren");
+      input.dataset.gfShareFallback = "true";
+    } else {
+      input = { type: "text", readOnly: true, value: url };
+    }
+    root.appendChild(input);
+  }
+  return { copied, shared, cancelled, url };
 }
 
 async function loadGastroPlaces(url = "data/orte-de.json") {

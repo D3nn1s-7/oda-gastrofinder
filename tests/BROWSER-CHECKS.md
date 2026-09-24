@@ -20,6 +20,8 @@ Der Initialaufruf von `/app/dzt` liefert lokal ohne Relay einen erwarteten 404. 
 | `all-invalid` | Eine volle Seite mit außerhalb liegenden Punkten wird verworfen, der Cursor bleibt fortsetzbar. |
 | `empty` | Abgeschlossene leere Quelle zeigt „Keine Daten gefunden.“. |
 | `detail-error` | Übersicht bleibt nutzbar; Detailbereich zeigt einen separaten Fehler. |
+| `xss` | Name/Beschreibung mit HTML-Fragmenten; kein Skript-/Bildkontakt und keine globale XSS-Variable. |
+| `image` | Eigenes lokales SVG-Testbild mit Nachweis; Galerie, Fokus und Bildwechsel prüfen. |
 | `image-fail` | Defektes Testbild führt zu einer fotofreien Darstellung, nicht zu kaputter Gesamtansicht. |
 | `error-401`, `error-403`, `error-404`, `error-429`, `error-500` | Statuszustände bleiben unterscheidbar; kein Kontakt zum direkten DZT-Host. |
 | `html-200`, `broken-json` | HTML-/JSON-Fehler werden als Payloadfehler behandelt. |
