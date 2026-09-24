@@ -1,5 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const { loadApp, loadAppWithFixtures, validConfig } = require("./helpers.cjs");
 
 const REGION = { ort: "Berlin", lat: 52.52, lng: 13.405, radiusKm: 25 };
@@ -87,4 +89,35 @@ test("Cockpit-Zustand ist explizit und aktualisiert die Edge-Tab-Sichtbarkeit", 
   assert.equal(edge.hidden, false);
   api.setGastroCockpitCollapsed(root, state, false);
   assert.equal(state.runtime.cockpitCollapsed, false);
+});
+
+test("Kartenmarker verwenden die Genussatlas-Semantik", () => {
+  const api = loadApp();
+  const restaurant = api.gastroMarkerHtml({ types: ["https://schema.org/Restaurant"] }, false);
+  const cafe = api.gastroMarkerHtml({ types: ["https://schema.org/CafeOrCoffeeShop"] }, true);
+  assert.match(restaurant, /gf-marker-restaurant/);
+  assert.match(cafe, /gf-marker-cafe/);
+  assert.match(cafe, /is-selected/);
+});
+
+test("Kartenresize läuft nach einer Layoutänderung mit pan:true", () => {
+  const calls = [];
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  state.runtime.map = { invalidateSize: (options) => calls.push(options) };
+  api.invalidateGastroMapSize(state);
+  return new Promise((resolve) => setTimeout(() => {
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].animate, false);
+    assert.equal(calls[0].pan, true);
+    resolve();
+  }, 5));
+});
+
+test("die Vollscreen-CSS enthält die sichtbaren Layoutbereiche", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../app/app.css"), "utf8");
+  for (const selector of [".gf-fullscreen-wrapper", ".gf-map-canvas", ".gf-cockpit", ".gf-brandbar", ".gf-floating-actions"]) {
+    assert.match(css, new RegExp(selector.replace(".", "\\.")));
+  }
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
 });

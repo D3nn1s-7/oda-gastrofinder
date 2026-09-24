@@ -1148,6 +1148,7 @@ function gastroIcon(name) {
     fork: '<path d="M7 3v6c0 3 6 3 6 0V3M10 3v18M17 3v18M17 3c-4 3-4 9 0 9"/>',
     cup: '<path d="M4 8h12v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5ZM16 9h2a3 3 0 0 1 0 6h-2M7 3v2M12 2v3M3 22h15"/>',
     map: '<path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2ZM9 3v16M15 5v16"/>',
+    home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z"/><path d="M9 21v-6h6v6"/>',
     grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     search: '<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/>',
     pin: '<path d="M19 10c0 6-7 11-7 11S5 16 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>',
@@ -1715,12 +1716,15 @@ function initGastroMap(root, state) {
   if (!mapNode || state.runtime.map) return Boolean(state.runtime.map);
   try {
     const L = window.L;
-    const map = L.map(mapNode, { zoomControl: true, preferCanvas: true });
+    const map = L.map(mapNode, { zoomControl: false, preferCanvas: true });
     const savedPosition = state.runtime.mapPosition;
     map.setView(
       savedPosition ? [savedPosition.lat, savedPosition.lng] : [state.region.lat, state.region.lng],
       savedPosition && Number.isFinite(savedPosition.zoom) ? savedPosition.zoom : 12,
     );
+    if (L.control && typeof L.control.zoom === "function") {
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+    }
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
@@ -1733,11 +1737,26 @@ function initGastroMap(root, state) {
     state.runtime.markerLayer.addTo(map);
     state.runtime.mapAreaCircle = L.circle([state.region.lat, state.region.lng], {
       radius: state.region.radiusKm * 1000,
-      color: "#254b3b",
+      color: "#28543d",
       weight: 1,
       fillColor: "#9db58d",
       fillOpacity: 0.08,
     }).addTo(map);
+    const controls = root.querySelector('[data-gf="map-controls"]');
+    if (controls && typeof document !== "undefined" && document.createElement) {
+      const homeButton = document.createElement("button");
+      homeButton.type = "button";
+      homeButton.className = "gf-home-button";
+      homeButton.dataset.gfHome = "true";
+      homeButton.setAttribute("aria-label", "Karte auf Ausgangsansicht zurücksetzen");
+      homeButton.title = "Ausgangsansicht";
+      homeButton.innerHTML = gastroIcon("home");
+      homeButton.addEventListener("click", () => {
+        if (typeof map.flyTo === "function") map.flyTo([state.region.lat, state.region.lng], 12, { duration: .6 });
+        if (typeof map.closePopup === "function") map.closePopup();
+      });
+      controls.appendChild(homeButton);
+    }
     const fallback = root.querySelector('[data-gf="map-fallback"]');
     if (fallback) fallback.hidden = true;
     updateGastroMap(root, state, deriveGastroView(state));
@@ -1761,6 +1780,7 @@ function updateGastroMap(root, state, view = null) {
   for (const poi of current.pois) {
     const selected = poi.id === state.selectedId;
     const marker = L.marker([poi.lat, poi.lng], {
+      riseOnHover: true,
       icon: L.divIcon({
         className: "gf-marker-icon",
         html: gastroMarkerHtml(poi, selected),
