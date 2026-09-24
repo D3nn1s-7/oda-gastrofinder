@@ -121,3 +121,27 @@ test("die Vollscreen-CSS enthält die sichtbaren Layoutbereiche", () => {
   }
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
 });
+
+test("Katalog rendert den aktuellen gefilterten Bestand mit Rückweg", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const poi = samplePoi({ name: "Synthetic Bistro" });
+  state.byId.set(poi.id, poi);
+  const markup = api.renderGastroCatalog(api.deriveGastroView(state), state);
+  assert.match(markup, /data-gf-catalog-overlay/);
+  assert.match(markup, /Synthetic Bistro/);
+  assert.match(markup, /Zurück zur Karte/);
+  assert.match(markup, /data-gf-catalog-card/);
+});
+
+test("Katalogzustand öffnet und schließt ohne Kartenwechsel", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const root = { innerHTML: "", classList: { toggle() {} }, querySelector: () => null };
+  api.openGastroCatalog(root, state);
+  assert.equal(state.runtime.catalogOpen, true);
+  assert.equal(state.view, "catalog");
+  api.closeGastroCatalog(root, state);
+  assert.equal(state.runtime.catalogOpen, false);
+  assert.equal(state.view, "map");
+});

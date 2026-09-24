@@ -1427,6 +1427,7 @@ function updateGastroView(root, state) {
       }
     }
   }
+  if (state.runtime.catalogOpen) refreshGastroCatalog(root, state);
   bindGastroImageFallbacks(root);
   updateGastroStatus(root, state, view);
   updateGastroMap(root, state, view);
@@ -1490,14 +1491,56 @@ function closeGastroGallery(root, state, fromDialogEvent = false) {
   }
 }
 
+function renderGastroCatalog(view, state) {
+  const current = view || deriveGastroView(state);
+  const limit = Math.max(24, Number(state && state.visible && state.visible.catalog) || 24);
+  const items = current.pois.slice(0, limit);
+  const uid = state && state.runtime && state.runtime.uid ? state.runtime.uid : "gf-catalog";
+  const cards = items.length
+    ? items.map((poi) => `<div class="gf-catalog-card" data-gf-catalog-card data-gf-id="${escapeHtml(poi.id || "")}">${renderGastroCard(poi, uid, poi.id === state.selectedId)}<button type="button" class="gf-button gf-button-secondary gf-catalog-map-action" data-gf-catalog-map data-gf-id="${escapeHtml(poi.id || "")}">${gastroIcon("map")} Auf Karte</button></div>`).join("")
+    : `<div class="gf-empty">Keine passenden Orte gefunden.</div>`;
+  return `<div class="gf-catalog-overlay" data-gf-catalog-overlay role="dialog" aria-modal="true" aria-labelledby="gf-${uid}-catalog-title"><header class="gf-catalog-header"><div><p class="gf-eyebrow">Gastrofinder Katalog</p><h2 id="gf-${uid}-catalog-title">Genussatlas</h2><p>${current.pois.length} ${current.pois.length === 1 ? "Ort" : "Orte"} im geladenen Bestand</p></div><button type="button" class="gf-button gf-button-secondary" data-gf-catalog-close>${gastroIcon("arrow")} Zurück zur Karte</button></header><div class="gf-catalog-scroll"><div class="gf-catalog-grid">${cards}</div></div></div>`;
+}
+
+function refreshGastroCatalog(root, state) {
+  if (!root || !state || !state.runtime || !state.runtime.catalogOpen) return;
+  const overlay = root.querySelector("[data-gf-catalog-overlay]");
+  const markup = renderGastroCatalog(deriveGastroView(state), state);
+  if (overlay && typeof overlay.outerHTML === "string") overlay.outerHTML = markup;
+  else if (!overlay && typeof root.insertAdjacentHTML === "function") root.insertAdjacentHTML("beforeend", markup);
+}
+
+function openGastroCatalog(root, state, opener = null) {
+  if (!root || !state || !state.runtime) return false;
+  state.runtime.catalogOpen = true;
+  state.runtime.catalogOpener = opener || (typeof document !== "undefined" ? document.activeElement : null);
+  state.view = "catalog";
+  if (root.classList && root.classList.add) root.classList.add("gf-catalog-open");
+  refreshGastroCatalog(root, state);
+  const overlay = root.querySelector && root.querySelector("[data-gf-catalog-close]");
+  if (overlay && typeof overlay.focus === "function") overlay.focus();
+  invalidateGastroMapSize(state);
+  return true;
+}
+
+function closeGastroCatalog(root, state, fromBackButton = false) {
+  if (!state || !state.runtime) return false;
+  const opener = state.runtime.catalogOpener;
+  state.runtime.catalogOpen = false;
+  state.runtime.catalogOpener = null;
+  state.view = "map";
+  if (root && root.classList && root.classList.remove) root.classList.remove("gf-catalog-open");
+  const overlay = root && root.querySelector ? root.querySelector("[data-gf-catalog-overlay]") : null;
+  if (overlay && typeof overlay.remove === "function") overlay.remove();
+  if (fromBackButton && opener && opener.isConnected && typeof opener.focus === "function") opener.focus();
+  invalidateGastroMapSize(state);
+  return true;
+}
+
 function setGastroView(root, state, view) {
-  if (view !== "map" && view !== "catalog") return;
-  state.view = view;
-  if (root && root.querySelector) {
-    const list = root.querySelector('[data-gf="results-list"]');
-    if (list) list.classList.toggle("gf-catalog-grid", view === "catalog");
-  }
-  updateGastroView(root, state);
+  if (view === "catalog") return openGastroCatalog(root, state);
+  if (view === "map") return closeGastroCatalog(root, state);
+  return false;
 }
 
 function setGastroSheet(root, state, size) {
@@ -1597,7 +1640,35 @@ function bindGastroShellEvents(root, state) {
   }, state);
   const catalogToggle = root.querySelector("[data-gf-catalog-toggle]");
   if (catalogToggle) addGastroListener(catalogToggle, "click", () => {
-    if (typeof openGastroCatalog === "function") openGastroCatalog(root, state, catalogToggle);
+    openGastroCatalog(root, state, catalogToggle);
+  }, state);
+  if (typeof root.addEventListener === "function") addGastroListener(root, "click", (event) => {
+    const target = event.target && typeof event.target.closest === "function"
+      ? event.target.closest("button")
+      : null;
+    if (!target) return;
+    if (target.hasAttribute("data-gf-catalog-close")) {
+      event.preventDefault();
+      closeGastroCatalog(root, state, true);
+      return;
+    }
+    if (target.hasAttribute("data-gf-catalog-map")) {
+      const id = target.getAttribute("data-gf-id");
+      if (!id) return;
+      event.preventDefault();
+      state.runtime.detailOpener = target;
+      selectGastroPoi(state, id, () => {
+        closeGastroCatalog(root, state, true);
+        updateGastroView(root, state);
+      });
+      return;
+    }
+    if (target.hasAttribute("data-gf-select") && target.closest("[data-gf-catalog-card]")) {
+      const id = target.getAttribute("data-gf-id");
+      if (!id) return;
+      state.runtime.detailOpener = target;
+      selectGastroPoi(state, id, () => updateGastroView(root, state));
+    }
   }, state);
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
