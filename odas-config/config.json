@@ -8,15 +8,17 @@
   ],
   "beschreibung": [
     "_multiline_",
-    "<p>Der Gastrofinder ist ein regionaler Restaurant- und Caféfinder für kommunale Portale. Er zeigt passende Betriebe aus dem DZT Knowledge Graph auf einer Karte, in einer Ergebnisliste und in einem Katalog.</p>",
-    "<p><strong>Für wen ist diese App?</strong> Bürgerinnen, Bürger und Gäste können ohne Datenwissen suchen. Der Portalbetreiber legt Ort und Umkreis fest.</p>",
+    "<p>Der Gastrofinder ist ein regionaler Restaurant- und Caféfinder für kommunale Portale. Seine Startseite ist als Fullscreen-Karte mit schwebender Genuss-Cockpit-Säule gestaltet; ein Vollbild-Katalog, eine Hero-Detailansicht und einheitliche Sekundärseiten führen durch die geladenen Betriebe.</p>",
+    "<p><strong>Für wen ist diese App?</strong> Bürgerinnen, Bürger und Gäste können ohne Datenwissen nach Name, Ort, Typ oder vorhandenen Küchenangaben suchen. Die Betreiberin bzw. der Betreiber legt Ort und Umkreis fest; Besucherinnen und Besucher ändern das Suchgebiet nicht.</p>",
     "<h2>Methodik</h2>",
-    "<p>Berücksichtigt werden ausschließlich die exakten Typen <code>Restaurant</code> und <code>CafeOrCoffeeShop</code>. IDs werden dedupliziert, Punkte und Luftlinienentfernung geprüft, Seiten nachgeladen und Detailangaben erst bei Auswahl ergänzt. Öffnungszeiten sind Quellenangaben ohne Live-Ampel.</p>",
+    "<p>Die App berücksichtigt ausschließlich Datensätze mit den exakten schema.org-Typen <code>Restaurant</code> und <code>CafeOrCoffeeShop</code>. Die Fullscreen-Karte, die einklappbare Cockpit-Säule, der Vollbild-Katalog und die Hero-Detailansicht verwenden denselben normalisierten State; Filter, Auswahl und Teilbestände bleiben synchron. Die Übersicht lädt höchstens 200 eindeutige Quell-IDs pro Seite. Detailangaben werden erst für die ausgewählte ID ergänzt. Öffnungszeiten sind Quellenangaben ohne Live-Ampel.</p>",
+    "<p>Fotos erscheinen nur mit eigenem nachweisbaren Rechtsstatus. Die Datensatzlizenz wird nicht automatisch auf Bilder übertragen. Datensätze ohne belegte anwendbare Rechte oder mit ungeklärten Geometrien werden nicht veröffentlicht.</p>",
     "<h2>Datenquelle</h2>",
     "<ul><li><strong>Open Data Portal:</strong> <a href=\"https://open-data-germany.org/\" target=\"_blank\" rel=\"noopener noreferrer\">Open Data Germany</a></li><li><strong>Datensatz:</strong> <a href=\"https://open-data-germany.org/\" target=\"_blank\" rel=\"noopener noreferrer\">DZT Knowledge Graph</a></li><li><strong>Ressource:</strong> <a href=\"https://proxy.opendatagermany.io/api/ts/v1/kg/sparql\" target=\"_blank\" rel=\"noopener noreferrer\">DZT SPARQL-Endpunkt</a></li></ul>",
-    "<p>Der authentifizierte Abruf läuft über das DZT-Relay der App-Instanz. Kartenkacheln kommen von OpenStreetMap; Bildhosts sind quellenabhängig und werden im Bildnachweis ausgewiesen.</p>",
+    "<p>Die Ressource ist authentifiziert und nicht als direkter Browser-Endpunkt gedacht. Die App verwendet deshalb <code>App-Basispfad/dzt?path=...</code>; der DZT-Schlüssel bleibt im Store. Kartenkacheln kommen von OpenStreetMap. Bildhosts sind quellenabhängig und werden im jeweiligen Bildnachweis sichtbar gemacht.</p>",
     "<h2>Open Data App</h2>",
-    "<p>Diese App gehört zum <a href=\"https://open-data-app-store.de/\" target=\"_blank\" rel=\"noopener noreferrer\">Open Data App Store</a>. Das öffentliche Repository und der finale Repository-Link sind noch nicht freigegeben.</p>"
+    "<p>Diese App gehört zum <a href=\"https://open-data-app-store.de/\" target=\"_blank\" rel=\"noopener noreferrer\">Open Data App Store</a>. Sie ist als Open Data App für kommunale und regionale Informationsangebote gedacht.</p>",
+    "<ul><li><a href=\"https://open-data-app-store.de/\" target=\"_blank\" rel=\"noopener noreferrer\">Open Data App Store</a> – Plattform für Open Data Apps</li><li><a href=\"https://github.com/open-data-apps\" target=\"_blank\" rel=\"noopener noreferrer\">Open Data Apps auf GitHub</a> – Organisation und weitere Apps</li><li>Repository: Die App ist lokal geprüft; ein eigenes öffentliches Repository und ein finaler Repository-Link sind noch nicht freigegeben.</li></ul>"
   ],
   "impressum": [
     "_multiline_",

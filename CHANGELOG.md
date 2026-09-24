@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-09-24
+- **REDESIGN:** Vollbild-Karte mit schwebenden Funktionsleisten und Genuss-Cockpit.
+- **REDESIGN:** Vollbild-Katalog, Hero-Detaildialog und mobile Karte/Liste-Umschaltung.
+- **REDESIGN:** Einheitlich gestaltete Sekundärseiten und aktualisierte responsive Screenshots.
+- **COMPATIBILITY:** DZT-Typen, Relay, Paging, Lizenz- und Fokusregeln bleiben erhalten.
+
 ## 1.0.0 - 2026-09-24
 - **NEW:** Gastrofinder als regionaler Restaurant- und Caféfinder mit Genussatlas-Karte, Ergebnisliste und Katalog.
 - **NEW:** Ausschließlich exakte DZT-Typen `Restaurant` und `CafeOrCoffeeShop`, transparente Quellseiten und Rechteprüfung.

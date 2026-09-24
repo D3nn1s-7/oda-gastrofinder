@@ -52,7 +52,7 @@ test("die Instanzkonfiguration enthält genau die vier Geo-Felder ohne Altschlü
 test("Schema, Screenshots, Icon und Lizenzhinweise sind lieferbar", () => {
   assert.equal(pkg["app-package-version"], "2");
   assert.equal(pkg["api-version"], "1");
-  assert.equal(pkg["app-version"], "1.0.0");
+  assert.equal(pkg["app-version"], "1.1.0");
   assert.deepEqual(pkg.screenshots, ["assets/Desktop_Screenshot.png", "assets/Mobile_Screenshot.png"]);
   for (const asset of [...pkg.screenshots, pkg["odas-app-icon"], pkg["app-icon"], pkg.daten.schema]) exists(asset);
   assert.equal(schema.primaryKey, "id");
@@ -65,9 +65,9 @@ test("Schema, Screenshots, Icon und Lizenzhinweise sind lieferbar", () => {
   assert.match(fs.readFileSync(path.join(root, "app/vendor/THIRD-PARTY.md"), "utf8"), /CC BY 4\.0|OFL/);
 });
 
-test("Changelog und lokale Konfiguration nennen die erste Version", () => {
+test("Changelog und lokale Konfiguration nennen die aktuelle Version", () => {
   const changelog = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
-  assert.match(changelog, /^## 1\.0\.0 - \d{4}-\d{2}-\d{2}/m);
+  assert.match(changelog, /^## 1\.1\.0 - \d{4}-\d{2}-\d{2}/m);
   assert.equal(cfg.titel, "Gastrofinder");
   assert.equal(cfg.seitentitel, "Gastrofinder");
   assert.equal(cfg.ort, "Berlin");

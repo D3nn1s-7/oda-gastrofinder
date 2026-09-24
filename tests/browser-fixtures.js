@@ -138,8 +138,12 @@
     const banner = document.createElement("div");
     banner.dataset.gfFixtureBanner = "true";
     banner.textContent = "Synthetische Testdaten · keine Live-Daten";
-    banner.style.cssText = "position:fixed;z-index:9999;top:0;left:0;right:0;padding:6px 12px;background:#193629;color:#fffdf7;font:700 12px system-ui;text-align:center";
-    document.body.appendChild(banner);
+    banner.style.cssText = "position:relative;z-index:9999;display:block;padding:6px 12px;background:#193629;color:#fffdf7;font:700 12px system-ui;text-align:center";
+    const fixtureStyle = document.createElement("style");
+    fixtureStyle.dataset.gfFixtureStyle = "true";
+    fixtureStyle.textContent = "body.gf-app-fullscreen .gf-fullscreen-wrapper{top:28px!important;bottom:auto!important;height:calc(100dvh - 28px)!important}";
+    document.head.appendChild(fixtureStyle);
+    document.body.insertBefore(banner, document.body.firstChild);
     window.gastroFixtureResult = result;
     Promise.resolve(typeof loadPage === "function" ? loadPage("startseite") : null)
       .catch((error) => result.errors.push(String(error && error.message || error)))
@@ -175,6 +179,7 @@
       }
       if (typeof loadPage === "function") return loadPage("startseite");
       document.querySelectorAll("[data-gf-fixture-banner]").forEach((node) => node.remove());
+      document.querySelectorAll("[data-gf-fixture-style]").forEach((node) => node.remove());
       window.gastroFixtureResult = null;
       window.gastroFixtureOriginal = null;
     }

@@ -1,21 +1,23 @@
-# Gastrofinder – Genussatlas
+# Gastrofinder – Genussatlas Fullscreen
 
-Der **Gastrofinder** ist eine regionale Open Data App für Restaurants und Cafés. Das ODAS-Portal legt Ort und Umkreis fest; Besucherinnen und Besucher finden geladene Betriebe auf einer Karte, in einer Ergebnisliste oder in einem Katalog und öffnen bei Bedarf Detailangaben.
+Der **Gastrofinder** ist eine regionale Open Data App für Restaurants und Cafés. Die Startseite ist als Fullscreen-Karte mit schwebenden Funktionsleisten, einer einklappbaren Genuss-Cockpit-Säule, Vollbild-Katalog und Hero-Detailansicht gestaltet. Das ODAS-Portal legt Ort und Umkreis fest; Besucherinnen und Besucher sehen nur den geladenen Bestand im konfigurierten Suchgebiet.
 
 ## Was die App kann
 
 - ausschließlich DZT-Datensätze mit den exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`,
-- Karte mit Leaflet, Marker-Clustering, Restaurant-/Café-Symbolen und Suchgebietskreis,
-- Name-/Ortssuche, Typfilter, Küchenfilter einschließlich „Nicht angegeben“ und Distanz-/Namenssortierung,
-- seitenweises Nachladen: maximal 200 eindeutige Quell-IDs pro Quellseite, zunächst 24 sichtbare Einträge,
-- Detailansicht mit Beschreibung, Adresse, Öffnungszeiten, Website, Telefon, Route und Bildnachweisen,
-- lokale Karten-/Font-Bibliotheken, Desktop- und Mobile-Darstellung sowie Tastaturfokus.
+- Fullscreen-Map mit Leaflet, Marker-Clustering, Suchgebietskreis, Home-/Zoom-Steuerung und Waldgrün-/Kupfer-Semantik,
+- schwebende Brandbar mit Ort, Radius und Portalhinweis,
+- schwebende Aktionen für Katalog, Teilen und ODAS-Menü,
+- einklappbare Cockpit-Säule mit Name-/Ortssuche, Typ-/Küchenfilter, Sortierung, Trefferliste und Nachladen,
+- Vollbild-Katalog mit den aktuell gefilterten Betrieben,
+- Hero-Detaildialog mit Beschreibung, Adresse, Öffnungszeiten, Kontakt, Route, Website und Bildnachweisen,
+- mobile Umschaltung zwischen Karte und vollständiger Ergebnisliste,
+- einheitlich gestaltete Sekundärseiten für Beschreibung, Kontakt, Datenschutz und Impressum,
+- lokale Karten-/Font-Bibliotheken, sichtbare Fokuszustände und `prefers-reduced-motion`.
 
 Öffnungszeiten sind Angaben der Quelle. Die App berechnet daraus **keine** Live-Anzeige „jetzt geöffnet“ oder „geschlossen“. Fehlende Angaben werden als „nicht angegeben“ ausgewiesen.
 
 ## Konfiguration
-
-Die App erwartet die folgenden Instanz-Einstellungen:
 
 | Schlüssel | Bedeutung |
 |---|---|
@@ -34,7 +36,7 @@ Im ODAS-Betrieb lädt die App Daten **nicht** direkt vom DZT-Host und nicht übe
 GET <App-Basispfad>/dzt?path=ts/v1/kg/sparql?query=...
 ```
 
-Der Store setzt den DZT-API-Key serverseitig. Die App enthält keinen API-Key. Die im ODAS-Live-System erforderliche Relay-Prüfung (A13) ist ein separater, nicht durch einen lokalen Mockup erfüllter Abnahmeschritt.
+Der Store setzt den DZT-API-Key serverseitig. Die App enthält keinen API-Key. Die echte Relay-Prüfung (A13) benötigt eine freigegebene Gastrofinder-Zielinstanz und ist nicht durch lokale Fixtures erfüllt.
 
 ## Datenmodell und Rechte
 
@@ -44,16 +46,28 @@ Die Datensatzlizenz wird nicht auf Bilder übertragen. Ein Bild erscheint nur mi
 
 ## Lokal prüfen
 
-Voraussetzung ist eine aktuelle ODAS-/Live-Server-Umgebung. Vom Projektordner aus:
+Voraussetzung ist eine aktuelle ODAS-/Live-Server-Umgebung. Für die Tests wird die App **nicht** über `localhost` oder `127.0.0.1` aufgerufen, weil `app-base.js` dort den lokalen Config-Zweig verwendet. Das autorisierte ODAS-Testziel ist:
+
+```text
+http://odas-dev.invalid:3000
+```
+
+Für die nicht veröffentlichte Gastrofinder-Implementierung wurde zusätzlich ein temporärer Nicht-Loopback-Fixture-Host verwendet. Die temporäre `app/config` und der Fixture-Server waren nicht eingecheckt und sind nicht Teil des Lieferumfangs.
+
+Vom Projektordner aus:
 
 ```bash
 node --check app/app.js
 node --check app/app-base.js
 node --test tests/*.test.cjs
 python3 -m unittest discover -s tests -p 'test_places.py'
+python3 -m json.tool app-package.json >/dev/null
+python3 -m json.tool odas-config/config.json >/dev/null
+python3 -m json.tool assets/schema.json >/dev/null
+python3 ../tools/odas-config-lint/lint.py .
 ```
 
-Für die Browsermatrix wird ein statischer Server auf einem freien localhost-Port gestartet und `http://127.0.0.1:<port>/app/` geöffnet. `tests/browser-fixtures.js` ist **nur ein Testwerkzeug** und gehört nicht zum Lieferumfang. Es ersetzt DZT-Antworten durch synthetische Bindings und markiert die Ansicht sichtbar als Testdaten. Die Fixture-Anleitung steht in [`tests/BROWSER-CHECKS.md`](tests/BROWSER-CHECKS.md).
+Die Browser-Fixture ersetzt DZT-Antworten ausschließlich durch synthetische SPARQL-Bindings. Sie ist **kein Live-Nachweis**. Anleitung und Szenarien stehen in [`tests/BROWSER-CHECKS.md`](tests/BROWSER-CHECKS.md); die aktuellen Nachweise liegen in [`tests/evidence/redesign-browser.md`](tests/evidence/redesign-browser.md) und [`tests/evidence/redesign-acceptance.md`](tests/evidence/redesign-acceptance.md).
 
 Ein lokaler Aufruf von `/dzt` ohne ODAS-Relay liefert erwartungsgemäß keinen echten DZT-Datensatz. Das ist keine Aussage über die Live-Anbindung.
 
@@ -61,20 +75,22 @@ Ein lokaler Aufruf von `/dzt` ohne ODAS-Relay liefert erwartungsgemäß keinen e
 
 - ODAS-Paketformat: `2`
 - API-Version: `1`
-- App-Version: `1.0.0`
-- ZIP-Inhalt wird durch das unveränderte Template-Makefile aus `app/`, `assets/`, `app-package.json` und `CHANGELOG.md` erstellt.
-- Das Paket ist lokal geprüft. Ein eigenes öffentliches Repository, ein finaler Repository-Link und eine echte ODAS-Zielinstanz sind noch nicht autorisiert; deshalb wird hier kein GitHub-Pfad erfunden und keine Live-Veröffentlichung behauptet.
+- App-Version: `1.1.0`
+- ZIP-Inhalt: `app/`, `assets/`, `app-package.json` und `CHANGELOG.md`
+- Das Paket ist lokal geprüft.
+- Ein eigenes öffentliches Repository, ein finaler Repository-Link und eine echte ODAS-Zielinstanz sind noch nicht autorisiert.
+- Es wurde keine Live-Instanz gebucht und keine Veröffentlichung behauptet.
 
 ## Projektstruktur
 
 ```text
-app/app.js                 App-Logik, Relay, Datenmodell, State und Darstellung
-app/app.css                Genussatlas-Layout und Responsive-/Fokusregeln
+app/app.js                 Fullscreen-Shell, Katalog, Dialog, Lifecycle und Datenlogik
+app/app.css                Genussatlas-Layout, Floating Controls und responsive Zustände
 app/data/                  GeoNames-Index und Lizenzhinweise
 app/vendor/                Bootstrap, Leaflet, MarkerCluster, Fonts und Lizenzen
 assets/schema.json         Frictionless Table Schema
 assets/odas-app-icon.svg   ODAS-Icon
-assets/*_Screenshot.png    synthetisch markierte Browser-Screenshots
+assets/*_Screenshot.png    synthetisch markierte Redesign-Screenshots
 odas-config/config.json    lokaler Konfigurationsspiegel
 odas-services              nur Tourismus Deutschland
 ```
