@@ -165,6 +165,12 @@ test("die Übersicht behält höchstens ein Bild", () => {
   assert.equal(poi.images[0].url, "https://example.org/a.jpg");
 });
 
+test("die Übersicht bindet das Prädikat auch im Root-Zweig", () => {
+  const api = loadApp();
+  const overview = api.buildOverviewQuery(REGION);
+  assert.match(overview, /BIND\(\?rootPredicate AS \?predicate\)/);
+});
+
 test("Übersichts- und Detailabfrage trennen IDs, Geometrie und ausführliche Felder", () => {
   const api = loadApp();
   const overview = api.buildOverviewQuery(REGION, "https://example.org/after?x=1");

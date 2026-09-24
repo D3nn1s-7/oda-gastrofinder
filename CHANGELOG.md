@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.1 - 2026-09-24
+- **FIX:** DZT-Übersichtsabfrage bindet das Prädikat auch für direkte Root-Tripel; Live-Relay-Antworten werden dadurch nicht mehr als unvollständig abgewiesen.
+
 ## 1.1.0 - 2026-09-24
 - **REDESIGN:** Vollbild-Karte mit schwebenden Funktionsleisten und Genuss-Cockpit.
 - **REDESIGN:** Vollbild-Katalog, Hero-Detaildialog und mobile Karte/Liste-Umschaltung.

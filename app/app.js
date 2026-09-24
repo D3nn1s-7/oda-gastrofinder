@@ -356,6 +356,7 @@ function buildGastroQuery(region, idPage, detail) {
   {
     ?id ?rootPredicate ?object .
     BIND(?id AS ?subject)
+    BIND(?rootPredicate AS ?predicate)
     VALUES ?rootPredicate { ${rootFields.join(" ")} }
     ${detail ? "" : `FILTER (?rootPredicate != schema:image || NOT EXISTS { ?id schema:image ?other . FILTER(STR(?other) < STR(?object)) })`}
   }
