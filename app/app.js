@@ -86,6 +86,100 @@ function validateGastroSource(config) {
   return sourceUrl;
 }
 
+function normalizeGastroPlaceName(value) {
+  return String(value == null ? "" : value)
+    .normalize("NFC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("de-DE");
+}
+
+function isValidGastroCoordinate(value, min, max) {
+  return Number.isFinite(value) && value >= min && value <= max;
+}
+
+function resolveGastroRegion(validated, places = []) {
+  if (validated.explicitCenter) {
+    return {
+      ort: validated.ort,
+      lat: validated.explicitCenter.lat,
+      lng: validated.explicitCenter.lng,
+      radiusKm: validated.radiusKm,
+    };
+  }
+
+  const wanted = normalizeGastroPlaceName(validated.ort);
+  const matches = Array.isArray(places)
+    ? places.filter((place) => normalizeGastroPlaceName(place && place.name) === wanted)
+    : [];
+  if (matches.length === 0) {
+    throw gastroConfigError(
+      "CONFIG",
+      `Der Ort „${validated.ort}" wurde im mitgelieferten Ortsindex nicht gefunden. Bitte explizite Koordinaten angeben.`,
+    );
+  }
+  if (matches.length > 1) {
+    throw gastroConfigError(
+      "CONFIG",
+      `Der Ort „${validated.ort}" ist mehrdeutig. Bitte explizite Koordinaten angeben.`,
+    );
+  }
+
+  const place = matches[0];
+  if (
+    !place ||
+    !isValidGastroCoordinate(Number(place.lat), -90, 90) ||
+    !isValidGastroCoordinate(Number(place.lng), -180, 180)
+  ) {
+    throw gastroConfigError("CONFIG", "Der eindeutige Ortsindex-Eintrag enthält ungültige Koordinaten.");
+  }
+  return {
+    ort: validated.ort,
+    lat: Number(place.lat),
+    lng: Number(place.lng),
+    radiusKm: validated.radiusKm,
+  };
+}
+
+function distanceKm(a, b) {
+  if (
+    !a ||
+    !b ||
+    !isValidGastroCoordinate(Number(a.lat), -90, 90) ||
+    !isValidGastroCoordinate(Number(b.lat), -90, 90) ||
+    !isValidGastroCoordinate(Number(a.lng), -180, 180) ||
+    !isValidGastroCoordinate(Number(b.lng), -180, 180)
+  ) {
+    return Number.NaN;
+  }
+
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const lat1 = toRadians(Number(a.lat));
+  const lat2 = toRadians(Number(b.lat));
+  const deltaLat = toRadians(Number(b.lat) - Number(a.lat));
+  const deltaLng = toRadians(Number(b.lng) - Number(a.lng));
+  const haversine =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function isInGastroRegion(point, region) {
+  if (
+    !point ||
+    !region ||
+    !isValidGastroCoordinate(Number(point.lat), -90, 90) ||
+    !isValidGastroCoordinate(Number(point.lng), -180, 180) ||
+    !isValidGastroCoordinate(Number(region.lat), -90, 90) ||
+    !isValidGastroCoordinate(Number(region.lng), -180, 180) ||
+    !Number.isFinite(Number(region.radiusKm)) ||
+    Number(region.radiusKm) < 0
+  ) {
+    return false;
+  }
+  return distanceKm(region, point) <= Number(region.radiusKm);
+}
+
 function validateGastroConfig(config = {}) {
   const sourceUrl = validateGastroSource(config);
   const ort = String(config.ort == null ? "" : config.ort).trim();
