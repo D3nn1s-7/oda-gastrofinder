@@ -27,6 +27,16 @@ function loadApp(overrides = {}) {
   return box;
 }
 
+function loadAppWithFixtures(overrides = {}) {
+  const box = loadApp(overrides);
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "fixtures.js"), "utf8"),
+    box,
+    { filename: "tests/fixtures.js" },
+  );
+  return box;
+}
+
 const validConfig = {
   ort: "Berlin",
   radiusKm: "25",
@@ -41,4 +51,4 @@ const validConfig = {
   ],
 };
 
-module.exports = { loadApp, validConfig };
+module.exports = { loadApp, loadAppWithFixtures, validConfig };
