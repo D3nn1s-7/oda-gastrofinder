@@ -60,3 +60,31 @@ test("Detaildialog und Cockpit werden beim Dispose geschlossen", () => {
   assert.equal(state.runtime.cockpitCollapsed, false);
   assert.equal(state.runtime.detailDialog, null);
 });
+
+test("die Startseite rendert Fullscreen-Shell, Brandbar, Floating Actions und Cockpit", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const root = { innerHTML: "", classList: { add() {}, remove() {}, toggle() {} } };
+  api.renderGastroShell(root, state);
+  assert.match(root.innerHTML, /class="gf-fullscreen-wrapper/);
+  assert.match(root.innerHTML, /class="gf-map-canvas/);
+  assert.match(root.innerHTML, /data-gf-brandbar/);
+  assert.match(root.innerHTML, /data-gf-floating-actions/);
+  assert.match(root.innerHTML, /data-gf-cockpit/);
+  assert.match(root.innerHTML, /data-gf-bottom-switcher/);
+  assert.match(root.innerHTML, /data-gf-catalog-toggle/);
+  assert.doesNotMatch(root.innerHTML, /data-gf="toolbar"/);
+});
+
+test("Cockpit-Zustand ist explizit und aktualisiert die Edge-Tab-Sichtbarkeit", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const classes = { toggle: (name, on) => { state.runtime[name] = on; } };
+  const edge = { hidden: false };
+  const root = { classList: classes, querySelector: (selector) => selector === "[data-gf-edge-tab]" ? edge : null };
+  api.setGastroCockpitCollapsed(root, state, true);
+  assert.equal(state.runtime.cockpitCollapsed, true);
+  assert.equal(edge.hidden, false);
+  api.setGastroCockpitCollapsed(root, state, false);
+  assert.equal(state.runtime.cockpitCollapsed, false);
+});

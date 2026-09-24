@@ -59,18 +59,20 @@ test("Kartenkarten beschriften beide Typen und lassen nur nachgewiesene Bilder z
   assert.match(card, /gf-test-card/);
 });
 
-test("die Shell hält Toolbar, Karte, Ergebnisfläche und Details getrennt", () => {
+test("die Shell hält Fullscreen-Map, Brandbar, Cockpit und Status getrennt", () => {
   const api = loadApp();
   const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
-  const root = { innerHTML: "" };
+  const root = { innerHTML: "", classList: { add() {}, remove() {}, toggle() {} } };
   api.renderGastroShell(root, state);
-  assert.match(root.innerHTML, /class="gf-root/);
-  assert.match(root.innerHTML, /data-gf="toolbar"/);
+  assert.match(root.innerHTML, /class="gf-fullscreen-wrapper/);
+  assert.match(root.innerHTML, /data-gf-brandbar/);
   assert.match(root.innerHTML, /data-gf="map"/);
-  assert.match(root.innerHTML, /data-gf="results"/);
-  assert.match(root.innerHTML, /data-gf="details"/);
+  assert.match(root.innerHTML, /data-gf-cockpit/);
+  assert.match(root.innerHTML, /data-gf="results-list"/);
   assert.match(root.innerHTML, /aria-live="polite"/);
   assert.match(root.innerHTML, /id="gf-[^"]+-search"/);
+  assert.doesNotMatch(root.innerHTML, /data-gf="toolbar"/);
+  assert.doesNotMatch(root.innerHTML, /data-gf="details"/);
 });
 
 test("Detailstatus loading erfindet keine fehlenden Angaben", () => {

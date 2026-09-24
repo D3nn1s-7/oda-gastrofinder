@@ -1155,6 +1155,7 @@ function gastroIcon(name) {
     phone: '<path d="m7 3 3 5-3 2c2 4 3 5 7 7l2-3 5 3c-1 5-5 5-10 2S2 9 3 5Z"/>',
     route: '<path d="m12 2 10 10-10 10L2 12Z"/><path d="M8 15v-5h8m-3-3 3 3-3 3"/>',
     share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v8h14v-8"/>',
+    menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
     external: '<path d="M14 3h7v7m0-7L10 14M10 3H3v18h18v-7"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
@@ -1261,15 +1262,50 @@ function renderGastroDetails(poi, uid = "gf-detail", status = "loading") {
 }
 
 function renderGastroShell(root, state) {
-  if (!root) return;
+  if (!root || !state || !state.runtime) return;
   const uid = state.runtime.uid || createGastroUid();
   state.runtime.uid = uid;
   if (root.classList && root.classList.add) root.classList.add("gf-root");
   const regionName = state.region ? state.region.ort : "Suchgebiet wird geladen";
   const radius = state.region ? `${state.region.radiusKm} km Umkreis` : "Umkreis wird geladen";
-  root.innerHTML = `<section class="gf-root gf-shell" aria-label="Restaurants und Cafés im Suchgebiet">
-    <div class="gf-toolbar" data-gf="toolbar"><div class="gf-toolbar-place">${gastroIcon("pin")}<div><strong>${escapeHtml(regionName)}</strong><span>${escapeHtml(radius)} · vom Portal festgelegt</span></div></div><div class="gf-toolbar-actions"><div class="gf-segment" role="group" aria-label="Ansicht"><button type="button" data-gf-view="map" aria-pressed="true">${gastroIcon("map")} Karte</button><button type="button" data-gf-view="catalog" aria-pressed="false">${gastroIcon("grid")} Katalog</button></div><button type="button" class="gf-button gf-button-secondary" data-gf-share>${gastroIcon("share")} Teilen</button></div></div>
-    <div class="gf-workspace"><div class="gf-map" data-gf="map" aria-label="Karte der geladenen Treffer"><div class="gf-map-fallback" data-gf="map-fallback">Karte wird geladen …</div><button type="button" class="gf-area-button" data-gf-show-area>Gebiet anzeigen</button></div><section class="gf-results" data-gf="results" aria-label="Ergebnisse"><div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div><button type="button" class="gf-sheet-toggle" data-gf-sheet-toggle aria-expanded="false">Ergebnisbereich vergrößern</button><div class="gf-filters"><label for="gf-${uid}-search">Name oder Ort</label><div class="gf-search">${gastroIcon("search")}<input id="gf-${uid}-search" data-gf-search type="search" placeholder="Name oder Ort suchen" autocomplete="off"></div><div class="gf-filter-buttons" role="group" aria-label="Typ"><button type="button" data-gf-filter="all" aria-pressed="true">Alle <span data-gf-count="all">0</span></button><button type="button" data-gf-filter="restaurant" aria-pressed="false">Restaurants <span data-gf-count="restaurant">0</span></button><button type="button" data-gf-filter="cafe" aria-pressed="false">Cafés <span data-gf-count="cafe">0</span></button></div><div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div></div><div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div><div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more>Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next>Weitere Daten laden</button></div></section><aside class="gf-details" data-gf="details" aria-label="Betriebsdetails" hidden></aside></div><p class="gf-status" data-gf="status" role="status" aria-live="polite"></p><div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div></section>`;
+  root.innerHTML = `<section class="gf-fullscreen-wrapper gf-shell" aria-label="Gastrofinder im Suchgebiet">
+    <div class="gf-map-layer">
+      <div class="gf-map-canvas" data-gf="map" aria-label="Karte der geladenen Gastro-Betriebe">
+        <div class="gf-map-fallback" data-gf="map-fallback">Karte wird geladen …</div>
+        <button type="button" class="gf-area-button" data-gf-show-area>${gastroIcon("pin")} Gebiet anzeigen</button>
+      </div>
+    </div>
+    <div class="gf-brandbar" data-gf-brandbar>
+      <strong>Gastrofinder</strong>
+      <span>Genussatlas · ${escapeHtml(regionName)}</span>
+      <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+    </div>
+    <div class="gf-floating-actions" data-gf-floating-actions aria-label="Kartenaktionen">
+      <button type="button" class="gf-floating-button gf-floating-primary" data-gf-catalog-toggle>${gastroIcon("grid")}<span>Katalog</span></button>
+      <button type="button" class="gf-floating-button" data-gf-share>${gastroIcon("share")}<span>Teilen</span></button>
+      <button type="button" class="gf-floating-button gf-floating-icon" data-gf-menu data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Menü öffnen">${gastroIcon("menu")}</button>
+    </div>
+    <aside class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
+      <div class="gf-cockpit-header">
+        <div class="gf-cockpit-brand"><span class="gf-cockpit-mark">${gastroIcon("fork")}</span><div><strong>Gastrofinder</strong><span>Genussatlas</span></div></div>
+        <button type="button" class="gf-cockpit-toggle" data-gf-cockpit-toggle aria-expanded="true" aria-label="Cockpit einklappen">${gastroIcon("arrow")}</button>
+      </div>
+      <div class="gf-cockpit-search">
+        <label class="gf-visually-hidden" for="gf-${uid}-search">Name, Ort oder Küche suchen</label>
+        <div class="gf-search">${gastroIcon("search")}<input id="gf-${uid}-search" data-gf-search type="search" placeholder="Name, Ort oder Küche suchen" autocomplete="off"></div>
+      </div>
+      <div class="gf-filter-buttons" role="group" aria-label="Betriebstyp"><button type="button" data-gf-filter="all" aria-pressed="true">Alle <span data-gf-count="all">0</span></button><button type="button" data-gf-filter="restaurant" aria-pressed="false">Restaurants <span data-gf-count="restaurant">0</span></button><button type="button" data-gf-filter="cafe" aria-pressed="false">Cafés <span data-gf-count="cafe">0</span></button></div>
+      <div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div>
+      <div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div>
+      <div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div>
+      <div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more>Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next>Weitere Daten laden</button></div>
+    </aside>
+    <button type="button" class="gf-edge-tab" data-gf-edge-tab aria-controls="gf-${uid}-cockpit" hidden>${gastroIcon("arrow")}<span>Ergebnisse öffnen</span></button>
+    <button type="button" class="gf-bottom-switcher" data-gf-bottom-switcher aria-pressed="false">${gastroIcon("map")}<span>Genusskarte</span></button>
+    <div class="gf-map-controls" data-gf="map-controls" aria-label="Kartensteuerung"></div>
+    <p class="gf-status" data-gf="status" role="status" aria-live="polite"></p>
+    <div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div>
+  </section>`;
 }
 
 function bindGastroImageFallbacks(root) {
@@ -1496,9 +1532,43 @@ function applyGastroFilterChange(state, root, changes) {
   updateGastroView(root, state);
 }
 
+function setGastroCockpitCollapsed(root, state, collapsed) {
+  if (!root || !state || !state.runtime) return;
+  state.runtime.cockpitCollapsed = Boolean(collapsed);
+  if (root.classList && root.classList.toggle) root.classList.toggle("gf-cockpit-collapsed", state.runtime.cockpitCollapsed);
+  const edge = root.querySelector("[data-gf-edge-tab]");
+  if (edge) {
+    edge.hidden = !state.runtime.cockpitCollapsed;
+    if (typeof edge.setAttribute === "function") edge.setAttribute("aria-hidden", String(!state.runtime.cockpitCollapsed));
+  }
+  const button = root.querySelector("[data-gf-cockpit-toggle]");
+  if (button) {
+    button.setAttribute("aria-expanded", String(!state.runtime.cockpitCollapsed));
+    button.setAttribute("aria-label", state.runtime.cockpitCollapsed ? "Cockpit öffnen" : "Cockpit einklappen");
+  }
+  invalidateGastroMapSize(state);
+}
+
+function setGastroMobileView(root, state, view) {
+  if (!root || !state || !state.runtime || (view !== "map" && view !== "list")) return;
+  state.runtime.mobileView = view;
+  if (root.classList && root.classList.toggle) root.classList.toggle("gf-mobile-list", view === "list");
+  const button = root.querySelector("[data-gf-bottom-switcher]");
+  if (button) {
+    const listMode = view === "list";
+    button.setAttribute("aria-pressed", String(listMode));
+    button.innerHTML = listMode
+      ? `${gastroIcon("map")}<span>Karte ansehen</span>`
+      : `${gastroIcon("grid")}<span>Genusskarte</span>`;
+  }
+  invalidateGastroMapSize(state);
+}
+
 function bindGastroShellEvents(root, state) {
   if (!root || typeof root.querySelector !== "function") return;
-  if (typeof AbortController === "function") state.runtime.events = new AbortController();
+  if (typeof AbortController === "function" && (!state.runtime.events || state.runtime.events.signal && state.runtime.events.signal.aborted)) {
+    state.runtime.events = new AbortController();
+  }
   const notify = () => updateGastroView(root, state);
   const search = root.querySelector('[data-gf-search]');
   if (search) {
@@ -1514,9 +1584,19 @@ function bindGastroShellEvents(root, state) {
   if (cuisine) addGastroListener(cuisine, "change", () => applyGastroFilterChange(state, root, { cuisine: cuisine.value }), state);
   const sort = root.querySelector('[data-gf-sort]');
   if (sort) addGastroListener(sort, "change", () => { state.sort = sort.value; notify(); }, state);
-  const sheetToggle = root.querySelector("[data-gf-sheet-toggle]");
-  if (sheetToggle) addGastroListener(sheetToggle, "click", () => {
-    setGastroSheet(root, state, state.sheet === "compact" ? "expanded" : "compact");
+  const cockpitToggle = root.querySelector("[data-gf-cockpit-toggle]");
+  if (cockpitToggle) addGastroListener(cockpitToggle, "click", () => {
+    setGastroCockpitCollapsed(root, state, !state.runtime.cockpitCollapsed);
+  }, state);
+  const edgeTab = root.querySelector("[data-gf-edge-tab]");
+  if (edgeTab) addGastroListener(edgeTab, "click", () => setGastroCockpitCollapsed(root, state, false), state);
+  const mobileSwitcher = root.querySelector("[data-gf-bottom-switcher]");
+  if (mobileSwitcher) addGastroListener(mobileSwitcher, "click", () => {
+    setGastroMobileView(root, state, state.runtime.mobileView === "list" ? "map" : "list");
+  }, state);
+  const catalogToggle = root.querySelector("[data-gf-catalog-toggle]");
+  if (catalogToggle) addGastroListener(catalogToggle, "click", () => {
+    if (typeof openGastroCatalog === "function") openGastroCatalog(root, state, catalogToggle);
   }, state);
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
@@ -1569,8 +1649,8 @@ function bindGastroShellEvents(root, state) {
   }, state);
   if (typeof ResizeObserver === "function") {
     state.runtime.resizeObserver = new ResizeObserver(() => invalidateGastroMapSize(state));
-    const workspace = root.querySelector(".gf-workspace");
-    if (workspace) state.runtime.resizeObserver.observe(workspace);
+    const mapLayer = root.querySelector(".gf-fullscreen-wrapper");
+    if (mapLayer) state.runtime.resizeObserver.observe(mapLayer);
   }
 }
 
