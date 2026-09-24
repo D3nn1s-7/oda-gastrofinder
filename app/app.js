@@ -772,6 +772,7 @@ function createGastroState(sourceUrl, region) {
       mapError: null,
       lastSelectedId: null,
       detailOpener: null,
+      focusTimer: null,
     },
   };
 }
@@ -952,6 +953,23 @@ async function loadNextGastroPage(state, notify = () => {}) {
   }
 }
 
+function restoreGastroDetailFocus(root, state, id = null) {
+  if (!root || typeof root.querySelectorAll !== "function") return;
+  const targetId = id || (state.runtime && state.runtime.detailOpener && typeof state.runtime.detailOpener.getAttribute === "function"
+    ? state.runtime.detailOpener.getAttribute("data-gf-id")
+    : "");
+  if (targetId) {
+    for (const button of root.querySelectorAll("[data-gf-select]")) {
+      if (button.getAttribute("data-gf-id") === targetId && typeof button.focus === "function") {
+        button.focus();
+        return;
+      }
+    }
+  }
+  const heading = root.querySelector('[data-gf="results-heading"]');
+  if (heading && typeof heading.focus === "function") heading.focus();
+}
+
 function closeGastroDetails(state, root = null) {
   if (!state || !state.detail) return;
   const opener = state.runtime && state.runtime.detailOpener;
@@ -1043,6 +1061,7 @@ function disposeGastroRuntime(state) {
   if (runtime.events && typeof runtime.events.abort === "function") runtime.events.abort();
   if (runtime.debounceTimer !== null) clearTimeout(runtime.debounceTimer);
   if (runtime.mapResizeTimer !== null) clearTimeout(runtime.mapResizeTimer);
+  if (runtime.focusTimer !== null) clearTimeout(runtime.focusTimer);
   if (runtime.resizeObserver && typeof runtime.resizeObserver.disconnect === "function") runtime.resizeObserver.disconnect();
   if (runtime.gallery && typeof runtime.gallery.close === "function") runtime.gallery.close();
   if (runtime.map) {
@@ -1062,6 +1081,7 @@ function disposeGastroRuntime(state) {
   runtime.resizeObserver = null;
   runtime.debounceTimer = null;
   runtime.mapResizeTimer = null;
+  runtime.focusTimer = null;
   runtime.gallery = null;
   runtime.map = null;
   runtime.markerById = null;
@@ -1218,7 +1238,6 @@ function renderGastroShell(root, state) {
   root.innerHTML = `<section class="gf-root gf-shell" aria-label="Restaurants und Cafés im Suchgebiet">
     <div class="gf-toolbar" data-gf="toolbar"><div class="gf-toolbar-place">${gastroIcon("pin")}<div><strong>${escapeHtml(regionName)}</strong><span>${escapeHtml(radius)} · vom Portal festgelegt</span></div></div><div class="gf-toolbar-actions"><div class="gf-segment" role="group" aria-label="Ansicht"><button type="button" data-gf-view="map" aria-pressed="true">${gastroIcon("map")} Karte</button><button type="button" data-gf-view="catalog" aria-pressed="false">${gastroIcon("grid")} Katalog</button></div><button type="button" class="gf-button gf-button-secondary" data-gf-share>${gastroIcon("share")} Teilen</button></div></div>
     <div class="gf-workspace"><div class="gf-map" data-gf="map" aria-label="Karte der geladenen Treffer"><div class="gf-map-fallback" data-gf="map-fallback">Karte wird geladen …</div><button type="button" class="gf-area-button" data-gf-show-area>Gebiet anzeigen</button></div><section class="gf-results" data-gf="results" aria-label="Ergebnisse"><div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div><button type="button" class="gf-sheet-toggle" data-gf-sheet-toggle aria-expanded="false">Ergebnisbereich vergrößern</button><div class="gf-filters"><label for="gf-${uid}-search">Name oder Ort</label><div class="gf-search">${gastroIcon("search")}<input id="gf-${uid}-search" data-gf-search type="search" placeholder="Name oder Ort suchen" autocomplete="off"></div><div class="gf-filter-buttons" role="group" aria-label="Typ"><button type="button" data-gf-filter="all" aria-pressed="true">Alle <span data-gf-count="all">0</span></button><button type="button" data-gf-filter="restaurant" aria-pressed="false">Restaurants <span data-gf-count="restaurant">0</span></button><button type="button" data-gf-filter="cafe" aria-pressed="false">Cafés <span data-gf-count="cafe">0</span></button></div><div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div></div><div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div><div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more>Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next>Weitere Daten laden</button></div></section><aside class="gf-details" data-gf="details" aria-label="Betriebsdetails" hidden></aside></div><p class="gf-status" data-gf="status" role="status" aria-live="polite"></p><div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div></section>`;
-  if (typeof root.querySelector === "function") bindGastroShellEvents(root, state);
 }
 
 function bindGastroImageFallbacks(root) {
@@ -1258,6 +1277,12 @@ function updateGastroStatus(root, state, view) {
 function updateGastroView(root, state) {
   if (!root || !state || typeof root.querySelector !== "function") return;
   const view = deriveGastroView(state);
+  const focusedId = typeof document !== "undefined" && document.activeElement && typeof document.activeElement.getAttribute === "function"
+    ? document.activeElement.getAttribute("data-gf-id")
+    : null;
+  const openerId = state.runtime.detailOpener && typeof state.runtime.detailOpener.getAttribute === "function"
+    ? state.runtime.detailOpener.getAttribute("data-gf-id")
+    : null;
   const scroll = root.querySelector('[data-gf="results-scroll"]');
   const previousScroll = scroll ? scroll.scrollTop : 0;
   const list = root.querySelector('[data-gf="results-list"]');
@@ -1322,6 +1347,15 @@ function updateGastroView(root, state) {
     }
     for (const button of root.querySelectorAll("[data-gf-view]")) {
       button.setAttribute("aria-pressed", button.getAttribute("data-gf-view") === state.view ? "true" : "false");
+    }
+  }
+  if ((focusedId || openerId) && typeof root.querySelectorAll === "function") {
+    for (const button of root.querySelectorAll("[data-gf-select]")) {
+      if (button.getAttribute("data-gf-id") === (openerId || focusedId)) {
+        if (openerId) state.runtime.detailOpener = button;
+        if (focusedId && typeof button.focus === "function") button.focus();
+        break;
+      }
     }
   }
   bindGastroImageFallbacks(root);
@@ -1487,9 +1521,18 @@ function bindGastroShellEvents(root, state) {
     if (target.hasAttribute("data-gf-gallery")) {
       openGastroGallery(root, state, target);
     } else if (target.hasAttribute("data-gf-close")) {
+      event.preventDefault();
+      const openerId = state.runtime.detailOpener && typeof state.runtime.detailOpener.getAttribute === "function"
+        ? state.runtime.detailOpener.getAttribute("data-gf-id")
+        : null;
       closeGastroGallery(root, state);
       closeGastroDetails(state, root);
       notify();
+      if (state.runtime.focusTimer !== null) clearTimeout(state.runtime.focusTimer);
+      state.runtime.focusTimer = setTimeout(() => {
+        state.runtime.focusTimer = null;
+        restoreGastroDetailFocus(root, state, openerId);
+      }, 0);
     }
   }, state);
   if (typeof ResizeObserver === "function") {
