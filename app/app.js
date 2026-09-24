@@ -728,6 +728,320 @@ function normalizeDztRows(bindings, region, stage) {
   return { sourceIds, pois, excluded };
 }
 
+function createGastroState(sourceUrl, region) {
+  return {
+    sourceUrl: String(sourceUrl || ""),
+    region: region || null,
+    configKey: JSON.stringify({ sourceUrl: String(sourceUrl || ""), region: region || null }),
+    byId: new Map(),
+    details: new Map(),
+    page: {
+      cursor: "",
+      done: false,
+      loaded: false,
+      busy: false,
+      error: null,
+      retryAt: 0,
+      excluded: new Map(),
+      seenIds: new Set(),
+    },
+    filters: { text: "", type: "all", cuisine: "all" },
+    sort: "distance",
+    selectedId: null,
+    view: "map",
+    sheet: "compact",
+    visible: { list: 24, catalog: 24 },
+    positions: { list: 0, catalog: 0, map: null },
+    detail: { seq: 0, busy: false, error: null, retryAt: 0 },
+    runtime: {
+      active: false,
+      generation: 0,
+      map: null,
+      cluster: null,
+      pageAbort: null,
+      detailAbort: null,
+      events: null,
+      resizeObserver: null,
+      debounceTimer: null,
+      gallery: null,
+      mapPosition: null,
+    },
+  };
+}
+
+function stateError(code, message) {
+  return dztError(code, message);
+}
+
+function validateGastroPageIds(state, sourceIds) {
+  if (!Array.isArray(sourceIds)) throw stateError("PAGE", "Die Quellseite enthält keine IDs.");
+  const seen = new Set();
+  let hasNew = false;
+  for (let index = 0; index < sourceIds.length; index += 1) {
+    const id = sourceIds[index];
+    if (typeof id !== "string" || !id) throw stateError("PAGE", "Die Quellseite enthält eine ungültige ID.");
+    try {
+      sparqlIri(id);
+    } catch (_error) {
+      throw stateError("PAGE", "Die Quellseite enthält eine ungültige ID.");
+    }
+    if (seen.has(id)) throw stateError("CURSOR", "Die Quellseite enthält eine doppelte Quell-ID.");
+    if (index > 0 && compareSourceIds(sourceIds[index - 1], id) >= 0) {
+      throw stateError("CURSOR", "Die Quell-IDs sind nicht in der serverseitigen Reihenfolge.");
+    }
+    if (!state.page.cursor || compareSourceIds(id, state.page.cursor) > 0) hasNew = true;
+    if (state.page.cursor && compareSourceIds(id, state.page.cursor) <= 0 && !state.page.seenIds.has(id)) {
+      throw stateError("CURSOR", "Die Quellseite springt vor dem gespeicherten Cursor zurück.");
+    }
+    seen.add(id);
+  }
+  if (state.page.cursor && sourceIds.length && !hasNew) {
+    throw stateError("CURSOR", "Die Quellseite macht keinen Cursorfortschritt.");
+  }
+}
+
+function commitGastroPage(state, page) {
+  if (!state || !state.page || !page) throw stateError("PAGE", "Ungültiger Seitencommit.");
+  if (state.page.done && page.sourceIds.length) throw stateError("PAGE", "Die Quelle ist bereits als abgeschlossen markiert.");
+  validateGastroPageIds(state, page.sourceIds);
+  const sourceIdSet = new Set(page.sourceIds);
+  const nextById = new Map(state.byId);
+  const nextExcluded = new Map(state.page.excluded);
+  const nextSeen = new Set(state.page.seenIds);
+  for (const id of page.sourceIds) nextSeen.add(id);
+  for (const poi of page.pois || []) {
+    if (!poi || !sourceIdSet.has(poi.id)) throw stateError("PAGE", "Ein Treffer gehört nicht zur Quellseite.");
+    if (!nextById.has(poi.id)) nextById.set(poi.id, poi);
+    nextExcluded.delete(poi.id);
+  }
+  for (const item of page.excluded || []) {
+    if (!item || !sourceIdSet.has(item.id)) throw stateError("PAGE", "Ein Ausschluss gehört nicht zur Quellseite.");
+    if (!nextById.has(item.id)) nextExcluded.set(item.id, item.reason || "unusable");
+  }
+  state.byId = nextById;
+  state.page.excluded = nextExcluded;
+  state.page.seenIds = nextSeen;
+  state.page.loaded = true;
+  state.page.error = null;
+  state.page.retryAt = 0;
+  if (page.sourceIds.length) {
+    state.page.cursor = page.sourceIds[page.sourceIds.length - 1];
+    state.page.done = false;
+  } else {
+    state.page.done = true;
+  }
+}
+
+function stateMatchesText(poi, text) {
+  if (!text) return true;
+  const needle = normalizeGastroPlaceName(text);
+  const values = [
+    poi.name,
+    poi.address && poi.address.street,
+    poi.address && poi.address.postalCode,
+    poi.address && poi.address.locality,
+  ];
+  return values.some((value) => normalizeGastroPlaceName(value).includes(needle));
+}
+
+function stateMatchesCuisine(poi, cuisine) {
+  if (!cuisine || cuisine === "all") return true;
+  if (cuisine === "missing") return !poi.cuisines || poi.cuisines.length === 0;
+  return (poi.cuisines || []).some((value) => normalizeGastroPlaceName(value) === normalizeGastroPlaceName(cuisine));
+}
+
+function stateMatchesType(poi, type) {
+  if (!type || type === "all") return true;
+  const uri = type === "restaurant"
+    ? "https://schema.org/Restaurant"
+    : type === "cafe"
+      ? "https://schema.org/CafeOrCoffeeShop"
+      : "";
+  return uri && poi.types.includes(uri);
+}
+
+function comparePoiOrder(a, b, sort) {
+  if (sort === "name") {
+    const nameOrder = compareSourceIds(a.name || "", b.name || "");
+    return nameOrder || compareSourceIds(a.id, b.id);
+  }
+  const distanceOrder = (a.distanceKm || 0) - (b.distanceKm || 0);
+  return distanceOrder || compareSourceIds(a.id, b.id);
+}
+
+function deriveGastroView(state) {
+  const all = Array.from(state.byId.values());
+  const filters = state.filters || { text: "", type: "all", cuisine: "all" };
+  const base = all.filter((poi) => stateMatchesText(poi, filters.text) && stateMatchesCuisine(poi, filters.cuisine));
+  const counts = {
+    all: base.length,
+    restaurant: base.filter((poi) => poi.types.includes("https://schema.org/Restaurant")).length,
+    cafe: base.filter((poi) => poi.types.includes("https://schema.org/CafeOrCoffeeShop")).length,
+  };
+  const cuisineOptions = [];
+  for (const poi of all) {
+    if (!poi.cuisines || !poi.cuisines.length) pushUnique(cuisineOptions, "missing");
+    for (const cuisine of poi.cuisines || []) pushUnique(cuisineOptions, cuisine);
+  }
+  if (filters.cuisine && filters.cuisine !== "all") pushUnique(cuisineOptions, filters.cuisine);
+  cuisineOptions.sort((a, b) => a === "missing" ? 1 : b === "missing" ? -1 : compareSourceIds(a, b));
+  const pois = base
+    .filter((poi) => stateMatchesType(poi, filters.type))
+    .sort((a, b) => comparePoiOrder(a, b, state.sort));
+  return { pois, counts, cuisineOptions, partial: !state.page.done };
+}
+
+function showMoreGastroResults(state, view) {
+  if (view !== "list" && view !== "catalog") throw new Error("Ungültige Ergebnisansicht.");
+  const derived = deriveGastroView(state);
+  const current = Number(state.visible[view]) || 24;
+  state.visible[view] = Math.min(current + 24, Math.max(24, derived.pois.length));
+}
+
+function runtimeIsCurrent(state, generation) {
+  return Boolean(state && state.runtime && state.runtime.active && state.runtime.generation === generation);
+}
+
+async function loadNextGastroPage(state, notify = () => {}) {
+  if (!state || !state.runtime || !state.runtime.active || !state.page || state.page.done || state.page.busy) return;
+  if (state.page.retryAt && state.page.retryAt > Date.now()) return;
+  if (!state.region || !state.sourceUrl) {
+    state.page.error = stateError("CONFIG", "Die Region ist noch nicht aufgelöst.");
+    notify();
+    return;
+  }
+  const generation = state.runtime.generation;
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  state.runtime.pageAbort = controller;
+  state.page.busy = true;
+  state.page.error = null;
+  try {
+    const bindings = await fetchDztBindings(
+      state.sourceUrl,
+      buildOverviewQuery(state.region, state.page.cursor),
+      { signal: controller ? controller.signal : undefined },
+    );
+    if (!runtimeIsCurrent(state, generation)) return;
+    const result = normalizeDztRows(bindings, state.region, "overview");
+    if (!runtimeIsCurrent(state, generation)) return;
+    commitGastroPage(state, result);
+    if (runtimeIsCurrent(state, generation)) notify();
+  } catch (error) {
+    if (!runtimeIsCurrent(state, generation) || (error && error.name === "AbortError")) return;
+    state.page.error = error;
+    state.page.retryAt = error && error.retryAt ? error.retryAt : 0;
+    notify();
+  } finally {
+    if (runtimeIsCurrent(state, generation)) {
+      state.page.busy = false;
+      state.runtime.pageAbort = null;
+    }
+  }
+}
+
+function closeGastroDetails(state) {
+  if (!state || !state.detail) return;
+  if (state.runtime && state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") {
+    state.runtime.detailAbort.abort();
+  }
+  state.runtime.detailAbort = null;
+  state.selectedId = null;
+  state.detail.seq += 1;
+  state.detail.busy = false;
+  state.detail.error = null;
+  state.detail.retryAt = 0;
+}
+
+async function selectGastroPoi(state, id, notify = () => {}) {
+  if (!state || !state.byId.has(id) || !state.runtime || !state.runtime.active) return;
+  if (state.selectedId === id && state.details.has(id)) {
+    state.detail.busy = false;
+    state.detail.error = null;
+    notify();
+    return;
+  }
+  if (state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") {
+    state.runtime.detailAbort.abort();
+  }
+  const generation = state.runtime.generation;
+  state.selectedId = id;
+  state.detail.busy = false;
+  state.detail.error = null;
+  if (state.details.has(id)) {
+    notify();
+    return;
+  }
+  const sequence = ++state.detail.seq;
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  state.runtime.detailAbort = controller;
+  state.detail.busy = true;
+  const stillCurrent = () => runtimeIsCurrent(state, generation) &&
+    state.detail.seq === sequence && state.selectedId === id;
+  try {
+    const bindings = await fetchDztBindings(
+      state.sourceUrl,
+      buildDetailQuery(id),
+      { signal: controller ? controller.signal : undefined },
+    );
+    if (!stillCurrent()) return;
+    const result = normalizeDztRows(bindings, state.region, "detail");
+    const detail = result.pois.find((poi) => poi.id === id);
+    if (!detail || result.sourceIds.length !== 1 || result.sourceIds[0] !== id || result.pois.length !== 1) {
+      throw stateError("DETAIL", "Die Detailantwort passt nicht zum ausgewählten Betrieb.");
+    }
+    if (!stillCurrent()) return;
+    state.details.set(id, detail);
+    state.detail.error = null;
+    state.detail.retryAt = 0;
+    notify();
+  } catch (error) {
+    if (!stillCurrent() || (error && error.name === "AbortError")) return;
+    state.detail.error = error;
+    state.detail.retryAt = error && error.retryAt ? error.retryAt : 0;
+    notify();
+  } finally {
+    if (stillCurrent()) {
+      state.detail.busy = false;
+      state.runtime.detailAbort = null;
+    }
+  }
+}
+
+function disposeGastroRuntime(state) {
+  if (!state || !state.runtime) return;
+  const runtime = state.runtime;
+  runtime.active = false;
+  runtime.generation += 1;
+  state.detail.seq += 1;
+  if (runtime.pageAbort && typeof runtime.pageAbort.abort === "function") runtime.pageAbort.abort();
+  if (runtime.detailAbort && typeof runtime.detailAbort.abort === "function") runtime.detailAbort.abort();
+  if (runtime.events && typeof runtime.events.abort === "function") runtime.events.abort();
+  if (runtime.debounceTimer !== null) clearTimeout(runtime.debounceTimer);
+  if (runtime.resizeObserver && typeof runtime.resizeObserver.disconnect === "function") runtime.resizeObserver.disconnect();
+  if (runtime.gallery && typeof runtime.gallery.close === "function") runtime.gallery.close();
+  if (runtime.map) {
+    try {
+      if (typeof runtime.map.getCenter === "function") {
+        const center = runtime.map.getCenter();
+        runtime.mapPosition = { lat: center.lat, lng: center.lng, zoom: center.zoom };
+      }
+      if (typeof runtime.map.remove === "function") runtime.map.remove();
+    } catch (_error) {
+      // Cleanup muss auch bei einem bereits teilweise zerstörten Mapper laufen.
+    }
+  }
+  runtime.pageAbort = null;
+  runtime.detailAbort = null;
+  runtime.events = null;
+  runtime.resizeObserver = null;
+  runtime.debounceTimer = null;
+  runtime.gallery = null;
+  runtime.map = null;
+  runtime.cluster = null;
+  state.page.busy = false;
+  state.detail.busy = false;
+}
+
 function app(configdata = {}, enclosingHtmlDivElement) {
   if (!enclosingHtmlDivElement) {
     throw new Error("Der Inhaltsbereich der App wurde nicht gefunden.");
