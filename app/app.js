@@ -773,6 +773,12 @@ function createGastroState(sourceUrl, region) {
       lastSelectedId: null,
       detailOpener: null,
       focusTimer: null,
+      cockpitCollapsed: false,
+      catalogOpen: false,
+      mobileView: "map",
+      detailDialog: null,
+      catalogOpener: null,
+      fullscreen: false,
     },
   };
 }
@@ -1063,6 +1069,12 @@ function disposeGastroRuntime(state) {
   if (runtime.mapResizeTimer !== null) clearTimeout(runtime.mapResizeTimer);
   if (runtime.focusTimer !== null) clearTimeout(runtime.focusTimer);
   if (runtime.resizeObserver && typeof runtime.resizeObserver.disconnect === "function") runtime.resizeObserver.disconnect();
+  if (runtime.detailDialog) {
+    const detailElement = runtime.detailDialog.element || runtime.detailDialog;
+    if (detailElement && typeof detailElement.close === "function") {
+      try { detailElement.close(); } catch (_error) { /* bereits geschlossen */ }
+    }
+  }
   if (runtime.gallery && typeof runtime.gallery.close === "function") runtime.gallery.close();
   if (runtime.map) {
     try {
@@ -1089,9 +1101,29 @@ function disposeGastroRuntime(state) {
   runtime.mapAreaCircle = null;
   runtime.lastSelectedId = null;
   runtime.detailOpener = null;
+  runtime.cockpitCollapsed = false;
+  runtime.catalogOpen = false;
+  runtime.mobileView = "map";
+  runtime.detailDialog = null;
+  runtime.catalogOpener = null;
+  runtime.fullscreen = false;
   runtime.cluster = null;
   state.page.busy = false;
   state.detail.busy = false;
+}
+
+function setGastroFullscreen(root, active) {
+  const enabled = Boolean(active);
+  if (root && root.gastroState) root.gastroState.runtime.fullscreen = enabled;
+  if (typeof document !== "undefined" && document.body && document.body.classList) {
+    if (typeof document.body.classList.toggle === "function") {
+      document.body.classList.toggle("gf-app-fullscreen", enabled);
+    } else if (enabled) {
+      document.body.classList.add("gf-app-fullscreen");
+    } else {
+      document.body.classList.remove("gf-app-fullscreen");
+    }
+  }
 }
 
 function createGastroUid() {
@@ -1780,6 +1812,7 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
   state.runtime.generation += 1;
   state.runtime.uid = state.runtime.uid || createGastroUid();
   enclosingHtmlDivElement.gastroState = state;
+  setGastroFullscreen(enclosingHtmlDivElement, true);
   renderGastroShell(enclosingHtmlDivElement, state);
   if (typeof enclosingHtmlDivElement.querySelector === "function") {
     bindGastroShellEvents(enclosingHtmlDivElement, state);
@@ -1820,10 +1853,10 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
 function onPageLeave(page) {
   if (typeof document === "undefined") return;
   const root = document.getElementById("main-content");
-  if (!root || !root.gastroState) return;
   if (page !== "startseite") {
-    disposeGastroRuntime(root.gastroState);
-    if (root.classList && root.classList.remove) root.classList.remove("gf-root");
+    if (root && root.gastroState) disposeGastroRuntime(root.gastroState);
+    setGastroFullscreen(root, false);
+    if (root && root.classList && root.classList.remove) root.classList.remove("gf-root");
   }
 }
 
