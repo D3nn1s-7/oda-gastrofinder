@@ -7,59 +7,58 @@
   "app-package-version": "2",
   "odas-app-icon": "assets/odas-app-icon.svg",
   "app-icon": "assets/odas-app-icon.svg",
-  "kurzbeschreibung": "Technische ODAS-Vorlage mit Hash-Routing, Instanz-Konfiguration und optionalem Proxy-Muster für neue Open-Data-Apps.",
+  "kurzbeschreibung": "Regionaler Restaurant- und Caféfinder mit Karte, Katalog, Typ- und Küchenfiltern sowie nachvollziehbaren Detailangaben.",
   "beschreibung": [
     "_multiline_",
-    "Die Generic Open Data App ist die technische Vorlage für neue Apps im Open Data App Store.",
-    "",
-    "Sie stellt das gemeinsame Layout, die ODAS-Konfigurationsanbindung und wiederverwendbare Helfer für Hash-Routing und Proxy-Abrufe bereit und zeigt die wirksame Instanz-Konfiguration als Vorschau. Eine Fachdatenabbildung ist nicht enthalten – vor der Veröffentlichung werden Fachlogik, Metadaten, Datenmodell, Beschreibung, Screenshots und Icon durch app-spezifische Inhalte ersetzt.",
+    "Der Gastrofinder ist ein regionaler Restaurant- und Caféfinder für kommunale Portale. Er zeigt passende Betriebe aus dem DZT Knowledge Graph auf einer Karte, in einer Ergebnisliste und in einem Katalog mit nachvollziehbaren Angaben zu Kontakt, Anfahrt und Öffnungszeiten.",
+    "Für wen ist diese App? Bürgerinnen, Bürger und Gäste können ohne Datenwissen nach Name, Ort, Typ oder vorhandenen Küchenangaben suchen. Die Betreiberin bzw. der Betreiber legt Ort und Umkreis fest; Besucherinnen und Besucher ändern das Suchgebiet nicht.",
     "",
     "## Methodik",
     "",
-    "Die Vorlage rendert auf der Startseite die geladene Instanz-Konfiguration als JSON-Vorschau und zeigt den Status des optionalen ODAS-Proxys (`proxyAktiv`).",
-    "",
-    "Routing und Konfigurationsladen liegen in der austauschbaren Base. Die app-spezifische Datei `app/app.js` stellt die Proxy-Hilfen (`fetchOdasResource`, `fetchOdasJson`, `getOdasAppBasePath`, `getOdasProxyEndpoint`) bereit; Fachlogik wird ausschließlich in `app/app.js` und `app/app.css` ergänzt. Die Informationsseiten (`Beschreibung`, `Kontakt`, `Impressum`, `Datenschutz`) werden aus derselben Instanz-Konfiguration erzeugt.",
-    "",
-    "Welche Datenquelle oder welches Fachschema tatsächlich verwendet wird, hängt von der abgeleiteten App ab.",
+    "Die App berücksichtigt ausschließlich Datensätze mit den exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`. Eine Klassifikation anhand von Namen oder Beschreibungsstichwörtern findet nicht statt. Die Ergebnisse werden nach stabiler Quell-ID dedupliziert, mit einem gültigen Punkt und der ungerundeten Luftlinienentfernung geprüft und nach den verfügbaren strukturierten Küchenwerten filterbar gemacht.",
+    "Die Übersicht lädt höchstens 200 eindeutige Quell-IDs pro Seite. Weitere Seiten und weitereDarstellungen werden bewusst getrennt nachgeladen. Detailangaben werden erst für die ausgewählte ID ergänzt. Öffnungszeiten sind Quellenangaben und keine Live-Ampel; fehlende Angaben werden als nicht angegeben ausgewiesen.",
+    "Fotos erscheinen nur mit eigenem nachweisbaren Rechtsstatus. Die Datensatzlizenz wird nicht automatisch auf Bilder übertragen. Datensätze ohne belegte anwendbare Rechte oder mit ungeklärten Geometrien werden für diese App nicht veröffentlicht.",
     "",
     "## Datenquelle",
     "",
-    "Die Generic-App lädt keinen Fachdatenbestand. Sie verwendet ausschließlich die lokale Instanz-Konfiguration und das gebündelte Beispielschema.",
+    "Die App liest den [Open Data Germany Knowledge Graph](https://open-data-germany.org/) und nutzt den konfigurierten SPARQL-Endpunkt. Der Abruf läuft im ODAS-Betrieb über das serverseitig abgesicherte DZT-Relay der App-Instanz.",
+    "- **Open Data Portal:** [Open Data Germany](https://open-data-germany.org/)",
+    "- **Datensatz:** [DZT Knowledge Graph](https://open-data-germany.org/)",
+    "- **Ressource:** [DZT SPARQL-Endpunkt](https://proxy.opendatagermany.io/api/ts/v1/kg/sparql)",
     "",
-    "- **Instanz-Konfiguration:** lokale Datei `odas-config/config.json` bzw. ODAS-Konfiguration (`urlDaten`, `apiurls` – derzeit leer, in abgeleiteten Apps zu setzen)",
-    "- **Beispielschema:** `assets/schema.json` im App-Paket (Frictionless Table Schema)",
-    "- **Portal-Platzhalter:** [{{odp.name}}]({{odp.url}}) – wird in abgeleiteten Apps durch die reale Portal- und Datensatz-URL ersetzt",
-    "",
-    "Angezeigt wird nur der konfigurierte Stand; Verfügbarkeit und Aktualität hängen von der jeweiligen abgeleiteten App ab.",
+    "Die Ressource ist authentifiziert und nicht als direkter Browser-Endpunkt gedacht. Die App verwendet deshalb `App-Basispfad/dzt?path=...`; der DZT-Schlüssel bleibt im Store. Kartenkacheln kommen von OpenStreetMap. Bildhosts sind quellenabhängig und werden im jeweiligen Bildnachweis sichtbar gemacht.",
     "",
     "## Open Data App",
     "",
-    "Diese App ist die technische Vorlage für den [Open Data App Store](https://open-data-app-store.de/) und ist Open Source. Abgeleitete Apps werden als eigenständige Open Data Apps betrieben und konfiguriert.",
-    "",
-    "- [Open Data App Store](https://open-data-app-store.de/) – die Plattform für Open Data Apps",
-    "- [Alle Open Data Apps auf GitHub](https://github.com/open-data-apps) – die Organisation mit allen Apps",
-    "- [oda-generic](https://github.com/open-data-apps/oda-generic) – das Repository dieser Vorlage"
+    "Diese App gehört zum [Open Data App Store](https://open-data-app-store.de/). Sie ist als Open Data App für kommunale und regionale Informationsangebote gedacht.",
+    "- [Open Data App Store](https://open-data-app-store.de/) – Plattform für Open Data Apps",
+    "- [Open Data Apps auf GitHub](https://github.com/open-data-apps) – Organisation und weitere Apps",
+    "- Repository: Die App ist lokal geprüft; ein eigenes öffentliches Repository und ein finaler Repository-Link sind noch nicht freigegeben."
   ],
   "tags-funktion": [
-    "Vorlage",
-    "Konfigurationsvorschau",
-    "Proxy"
+    "Karte",
+    "Filter",
+    "Katalog"
   ],
   "tags-dateityp": [
-    "JSON"
+    "API",
+    "JSON",
+    "SPARQL"
   ],
   "tags-datenart": [
-    "Konfigurationsdaten"
+    "Gastronomie",
+    "Tourismus",
+    "Geodaten"
   ],
   "screenshots": [
     "assets/Desktop_Screenshot.png",
     "assets/Mobile_Screenshot.png"
   ],
   "daten": {
-    "beschreibung": "Die Generic-App lädt selbst keinen Fachdatenbestand. assets/schema.json ist ein gültiges Frictionless-Beispielschema und muss in abgeleiteten Apps durch das tatsächliche Tabellenmodell ersetzt werden.",
+    "beschreibung": "Die App normalisiert SPARQL-Bindings des DZT Knowledge Graph zu regionalen Restaurant- und Café-Betrieben. Die Lizenz- und Bildnachweise bleiben objektbezogen erhalten.",
     "schema": "assets/schema.json",
-    "beispiel": "Platzhalter für abgeleitete Apps: daten.beispiel beschreibt die Antwortform der Quelle (z. B. CKAN-Datastore mit result.records, CSV-Datei mit Kopfzeile), daten.beispiel-url zeigt auf einen direkt ladbaren Beispiel-Endpunkt (identisch zum apiurls-Beispiel). Vor der Veröffentlichung durch app-spezifische Angaben ersetzen.",
-    "beispiel-url": ""
+    "beispiel": "Die Quelle liefert JSON-LD-/SPARQL-Bindings mit stabiler Quell-ID, RDF-Typ, Geo-Knoten, Adressknoten, strukturierten Küchen, Kontakten, Öffnungszeiten sowie Lizenz- und Bildnachweisen. Daraus entsteht ein GastroPoi-Datensatz mit id, types, name, address, lat, lng, distanceKm, cuisines, images, dataLicense, description, openingHours, websites und telephones.",
+    "beispiel-url": "https://proxy.opendatagermany.io/api/ts/v1/kg/sparql"
   },
   "branding-css": "",
   "api-version": "1",
@@ -107,10 +106,10 @@
       "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Kontakt angezeigt.",
       "default": [
         "_multiline_",
-        "Sie haben Fragen, Hinweise oder Verbesserungsvorschläge zu dieser App? Wenden Sie sich gern an den Anbieter des Open Data Portals.",
+        "Sie haben Fragen, Hinweise oder Verbesserungsvorschläge zu dieser App? Wenden Sie sich gern an die Betreiberin oder den Betreiber des Open-Data-Portals.",
         "",
-        "- Tel.: [{{odp.anbieter.tel}}](tel:{{odp.anbieter.tel}})",
-        "- E-Mail: [{{odp.anbieter.email}}](mailto:{{odp.anbieter.email}})"
+        "- **Datenportal:** [{{odp.name}}]({{odp.url}})",
+        "- **E-Mail:** [{{odp.anbieter.email}}](mailto:{{odp.anbieter.email}})"
       ],
       "format": {
         "typ": "markdown"
@@ -123,35 +122,30 @@
       "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Über diese App angezeigt.",
       "default": [
         "_multiline_",
-        "Die Generic Open Data App ist die technische Vorlage für neue Apps im Open Data App Store.",
-        "",
-        "Sie stellt das gemeinsame Layout, die ODAS-Konfigurationsanbindung und wiederverwendbare Helfer für Hash-Routing und Proxy-Abrufe bereit und zeigt die wirksame Instanz-Konfiguration als Vorschau. Eine Fachdatenabbildung ist nicht enthalten – vor der Veröffentlichung werden Fachlogik, Metadaten, Datenmodell, Beschreibung, Screenshots und Icon durch app-spezifische Inhalte ersetzt.",
+        "Der Gastrofinder ist ein regionaler Restaurant- und Caféfinder für kommunale Portale. Er zeigt passende Betriebe aus dem DZT Knowledge Graph auf einer Karte, in einer Ergebnisliste und in einem Katalog mit nachvollziehbaren Angaben zu Kontakt, Anfahrt und Öffnungszeiten.",
+        "Für wen ist diese App? Bürgerinnen, Bürger und Gäste können ohne Datenwissen nach Name, Ort, Typ oder vorhandenen Küchenangaben suchen. Die Betreiberin bzw. der Betreiber legt Ort und Umkreis fest; Besucherinnen und Besucher ändern das Suchgebiet nicht.",
         "",
         "## Methodik",
         "",
-        "Die Vorlage rendert auf der Startseite die geladene Instanz-Konfiguration als JSON-Vorschau und zeigt den Status des optionalen ODAS-Proxys (`proxyAktiv`).",
-        "",
-        "Routing und Konfigurationsladen liegen in der austauschbaren Base. Die app-spezifische Datei `app/app.js` stellt die Proxy-Hilfen (`fetchOdasResource`, `fetchOdasJson`, `getOdasAppBasePath`, `getOdasProxyEndpoint`) bereit; Fachlogik wird ausschließlich in `app/app.js` und `app/app.css` ergänzt. Die Informationsseiten (`Beschreibung`, `Kontakt`, `Impressum`, `Datenschutz`) werden aus derselben Instanz-Konfiguration erzeugt.",
-        "",
-        "Welche Datenquelle oder welches Fachschema tatsächlich verwendet wird, hängt von der abgeleiteten App ab.",
+        "Die App berücksichtigt ausschließlich Datensätze mit den exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`. Eine Klassifikation anhand von Namen oder Beschreibungsstichwörtern findet nicht statt. Die Ergebnisse werden nach stabiler Quell-ID dedupliziert, mit einem gültigen Punkt und der ungerundeten Luftlinienentfernung geprüft und nach den verfügbaren strukturierten Küchenwerten filterbar gemacht.",
+        "Die Übersicht lädt höchstens 200 eindeutige Quell-IDs pro Seite. Weitere Seiten und weitereDarstellungen werden bewusst getrennt nachgeladen. Detailangaben werden erst für die ausgewählte ID ergänzt. Öffnungszeiten sind Quellenangaben und keine Live-Ampel; fehlende Angaben werden als nicht angegeben ausgewiesen.",
+        "Fotos erscheinen nur mit eigenem nachweisbaren Rechtsstatus. Die Datensatzlizenz wird nicht automatisch auf Bilder übertragen. Datensätze ohne belegte anwendbare Rechte oder mit ungeklärten Geometrien werden für diese App nicht veröffentlicht.",
         "",
         "## Datenquelle",
         "",
-        "Die Generic-App lädt keinen Fachdatenbestand. Sie verwendet ausschließlich die lokale Instanz-Konfiguration und das gebündelte Beispielschema.",
+        "Die App liest den [Open Data Germany Knowledge Graph](https://open-data-germany.org/) und nutzt den konfigurierten SPARQL-Endpunkt. Der Abruf läuft im ODAS-Betrieb über das serverseitig abgesicherte DZT-Relay der App-Instanz.",
+        "- **Open Data Portal:** [Open Data Germany](https://open-data-germany.org/)",
+        "- **Datensatz:** [DZT Knowledge Graph](https://open-data-germany.org/)",
+        "- **Ressource:** [DZT SPARQL-Endpunkt](https://proxy.opendatagermany.io/api/ts/v1/kg/sparql)",
         "",
-        "- **Instanz-Konfiguration:** lokale Datei `odas-config/config.json` bzw. ODAS-Konfiguration (`urlDaten`, `apiurls` – derzeit leer, in abgeleiteten Apps zu setzen)",
-        "- **Beispielschema:** `assets/schema.json` im App-Paket (Frictionless Table Schema)",
-        "- **Portal-Platzhalter:** [{{odp.name}}]({{odp.url}}) – wird in abgeleiteten Apps durch die reale Portal- und Datensatz-URL ersetzt",
-        "",
-        "Angezeigt wird nur der konfigurierte Stand; Verfügbarkeit und Aktualität hängen von der jeweiligen abgeleiteten App ab.",
+        "Die Ressource ist authentifiziert und nicht als direkter Browser-Endpunkt gedacht. Die App verwendet deshalb `App-Basispfad/dzt?path=...`; der DZT-Schlüssel bleibt im Store. Kartenkacheln kommen von OpenStreetMap. Bildhosts sind quellenabhängig und werden im jeweiligen Bildnachweis sichtbar gemacht.",
         "",
         "## Open Data App",
         "",
-        "Diese App ist die technische Vorlage für den [Open Data App Store](https://open-data-app-store.de/) und ist Open Source. Abgeleitete Apps werden als eigenständige Open Data Apps betrieben und konfiguriert.",
-        "",
-        "- [Open Data App Store](https://open-data-app-store.de/) – die Plattform für Open Data Apps",
-        "- [Alle Open Data Apps auf GitHub](https://github.com/open-data-apps) – die Organisation mit allen Apps",
-        "- [oda-generic](https://github.com/open-data-apps/oda-generic) – das Repository dieser Vorlage"
+        "Diese App gehört zum [Open Data App Store](https://open-data-app-store.de/). Sie ist als Open Data App für kommunale und regionale Informationsangebote gedacht.",
+        "- [Open Data App Store](https://open-data-app-store.de/) – Plattform für Open Data Apps",
+        "- [Open Data Apps auf GitHub](https://github.com/open-data-apps) – Organisation und weitere Apps",
+        "- Repository: Die App ist lokal geprüft; ein eigenes öffentliches Repository und ein finaler Repository-Link sind noch nicht freigegeben."
       ],
       "format": {
         "typ": "markdown"
@@ -166,22 +160,15 @@
         "_multiline_",
         "## Anbieter",
         "",
-        "{{{odp.anbieter.orgName}}}  ",
+        "{{{odp.anbieter.orgName}}}",
         "{{{odp.anbieter.orgUnit}}}",
         "",
-        "{{odp.anbieter.strasse}}  ",
-        "{{odp.anbieter.plzort}}",
-        "",
-        "Website: [{{odp.anbieter.url}}]({{odp.anbieter.url}})",
-        "",
-        "## Ansprechperson",
-        "",
-        "{{odp.anbieter.kontakt-bezeichnung}}  ",
-        "{{odp.anbieter.name}}",
+        "{{{odp.anbieter.strasse}}}",
+        "{{{odp.anbieter.plzort}}}",
         "",
         "## Kontakt",
         "",
-        "Tel.: {{odp.anbieter.tel}}  ",
+        "Telefon: {{odp.anbieter.tel}}",
         "E-Mail: [{{odp.anbieter.email}}](mailto:{{odp.anbieter.email}})"
       ],
       "format": {
@@ -195,11 +182,11 @@
       "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Datenschutz angezeigt.",
       "default": [
         "_multiline_",
-        "Die Generic-App verarbeitet im Browser nur die vom ODAS bereitgestellte Instanz-Konfiguration. Für eine abgeleitete App ist die Datenschutzerklärung an die tatsächlich geladenen Daten und eingebundenen Dienste anzupassen.",
+        "Der Browser lädt Daten über die jeweilige ODAS-App-Instanz. Für den DZT-Zugriff verwendet die App das DZT-Relay der Instanz; der DZT-Schlüssel bleibt serverseitig im Store. Die App speichert keine personenbezogenen Daten und verwendet weder Tracking noch GPS-Ortung.",
         "",
-        "Alle für die Darstellung benötigten Programmbibliotheken werden mit der App ausgeliefert. Beim Aufruf werden dafür keine externen Server kontaktiert.",
+        "Die Kartenkacheln werden von OpenStreetMap geladen. DZT-Bildhosts sind quellenabhängig; der konkrete Host wird bei einem Bild im Bildnachweis angezeigt. Website-, Routing- und Telefonlinks öffnen externe Ziele erst durch Nutzeraktion. Manrope, Fraunces, Leaflet, MarkerCluster und Bootstrap werden lokal aus der App ausgeliefert.",
         "",
-        "Die Vorlage ruft selbst keine Datenquelle ab; das Laden der konfigurierten Datenquelle ist Sache der abgeleiteten App und wird in deren Datenschutzerklärung beschrieben."
+        "Der mitgelieferte GeoNames-Ortsindex dient nur der Offline-Auflösung des konfigurierten Ortes. Weitere Informationen zu Herkunft und Lizenz stehen in app/data/README.md und app/data/LICENSE-GeoNames-CC-BY-4.0.txt."
       ],
       "format": {
         "typ": "markdown"
@@ -210,7 +197,7 @@
       "label": "Fußzeile",
       "category": "kontakt-rechtliches",
       "hilfe": "Der Text wird am unteren Rand der App angezeigt.",
-      "default": "© {{jahr}} | App und Daten: {{odp.anbieter.name}} | Entwicklung: {{app.developer.name}} | ODAS: {{odas.betreiber.name}}",
+      "default": "© {{jahr}} | Gastrofinder | Daten: DZT Knowledge Graph | Entwicklung: Ondics GmbH | ODAS: {{odas.betreiber.name}}",
       "format": {
         "typ": "string",
         "laenge": 255
@@ -242,7 +229,7 @@
     "urlDaten": {
       "label": "URL zum Datensatz",
       "category": "datenherkunft",
-      "hilfe": "Startseite des Open-Data-Germany-Portals zum Knowledge Graph.",
+      "hilfe": "Startseite des Open-Data-Germany-Portals zum DZT Knowledge Graph.",
       "default": "https://open-data-germany.org/",
       "beispiel": "",
       "format": {
@@ -254,7 +241,7 @@
     "apiurls": {
       "label": "Datenquelle",
       "category": "datenherkunft",
-      "hilfe": "DZT-SPARQL-Endpunkt. Die App liest ausschließlich Restaurant- und Café-Datensätze über das ODAS-DZT-Relay.",
+      "hilfe": "Diese App benötigt die Wissensdatenbank-Ressource „DZT Knowledge Graph (SPARQL)“ und liest Restaurant- und Café-Datensätze ausschließlich über das ODAS-DZT-Relay.",
       "typ": "array",
       "format": {
         "typ": "url",

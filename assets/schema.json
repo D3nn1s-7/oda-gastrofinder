@@ -1,45 +1,24 @@
 {
   "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+  "name": "gastrofinder",
+  "title": "Gastrofinder – normalisierte Restaurant- und Café-Betriebe",
+  "description": "Normalisiertes internes Modell aus DZT-SPARQL-Bindings. Leere Detailfelder können vor der Detailanreicherung leer sein; die App kennzeichnet fehlende Angaben erst nach erfolgreicher Detailabfrage als nicht angegeben.",
+  "primaryKey": "id",
   "fields": [
-    {
-      "name": "id",
-      "title": "ID",
-      "type": "string",
-      "description": "Eindeutiger Bezeichner eines Beispieldatensatzes.",
-      "constraints": {
-        "required": true,
-        "unique": true
-      }
-    },
-    {
-      "name": "bezeichnung",
-      "title": "Bezeichnung",
-      "type": "string",
-      "description": "Menschenlesbare Bezeichnung des Eintrags.",
-      "constraints": {
-        "required": true
-      }
-    },
-    {
-      "name": "wert",
-      "title": "Wert",
-      "type": "number",
-      "description": "Beispielhafter numerischer Mess- oder Kennzahlenwert.",
-      "constraints": {
-        "required": false
-      }
-    },
-    {
-      "name": "stand",
-      "title": "Datenstand",
-      "type": "date",
-      "description": "Optionales Datum, auf das sich der Eintrag bezieht.",
-      "constraints": {
-        "required": false
-      }
-    }
+    {"name":"id","title":"Quell-ID","type":"string","description":"Stabile IRI des DZT-Betriebs; zugleich Primärschlüssel.","constraints":{"required":true}},
+    {"name":"types","title":"Schema.org-Typen","type":"array","description":"Erlaubte vollständige Typ-URIs, Restaurant und/oder CafeOrCoffeeShop."},
+    {"name":"name","title":"Name","type":"string","description":"Anzeigename; bevorzugt deutsch, dann neutral, mit Fallback auf eine vorhandene Sprache."},
+    {"name":"address","title":"Adresse","type":"object","description":"Adresse mit street, postalCode und locality; nicht belegte Detailwerte bleiben leer."},
+    {"name":"lat","title":"Breitengrad","type":"number","description":"Validierter WGS84-Punkt des Betriebs."},
+    {"name":"lng","title":"Längengrad","type":"number","description":"Validierter WGS84-Punkt des Betriebs."},
+    {"name":"distanceKm","title":"Luftlinienentfernung","type":"number","description":"Ungerundete Haversine-Entfernung zum konfigurierten Zentrum; Anzeige rundet erst später."},
+    {"name":"cuisines","title":"Küchen","type":"array","description":"Strukturierte, dokumentierte Küchenwerte; nicht aus Namen oder Beschreibungen abgeleitet."},
+    {"name":"images","title":"Bilder mit Nachweisen","type":"array","description":"Nur lizenzierte Bilder mit URL, Quellen-, Urheber- und Lizenznachweis."},
+    {"name":"dataLicense","title":"Datensatzlizenz","type":"object","description":"Lizenz-URL und erforderliche Attribution des Datensatzes."},
+    {"name":"description","title":"Beschreibung","type":"string","description":"Sicher aufbereiteter Quelltext; vor Detailanreicherung leer."},
+    {"name":"openingHours","title":"Öffnungszeiten","type":"array","description":"Quellenangaben mit Tagen, Intervallen und Gültigkeitszeitraum; keine Live-Berechnung."},
+    {"name":"websites","title":"Websites","type":"array","description":"Sichere HTTP(S)-Links."},
+    {"name":"telephones","title":"Telefonnummern","type":"array","description":"Erlaubte Telefonangaben für sichere tel:-Links."}
   ],
-  "missingValues": [
-    ""
-  ]
+  "missingValues": [""]
 }
