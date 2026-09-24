@@ -288,6 +288,134 @@ function dztError(code, message, status, retryAt) {
   return error;
 }
 
+function buildGastroSparqlQuery(lat, lng, radiusKm) {
+  let geoFilter = "";
+  const numLat = parseFloat(lat);
+  const numLng = parseFloat(lng);
+  const radius = parseFloat(radiusKm) || 25;
+
+  if (!isNaN(numLat) && !isNaN(numLng) && numLat !== 0 && numLng !== 0) {
+    const geoShapeJson = JSON.stringify({
+      query: {
+        geo_shape: {
+          geometry: {
+            shape: {
+              type: "circle",
+              radius: `${radius}km`,
+              coordinates: [numLng, numLat],
+            },
+            relation: "intersects",
+          },
+        },
+      },
+    });
+    geoFilter = `
+  ?search a inst:dzt-geo-shapes ;
+    con:query ${JSON.stringify(geoShapeJson)} ;
+    con:entities ?s .`;
+  }
+
+  return `PREFIX inst: <http://www.ontotext.com/connectors/elasticsearch/instance#>
+PREFIX con: <http://www.ontotext.com/connectors/elasticsearch#>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?s 
+  (SAMPLE(?nameDe) AS ?name)
+  (SAMPLE(?descDe) AS ?desc)
+  (SAMPLE(?latVal) AS ?lat)
+  (SAMPLE(?lngVal) AS ?lng)
+  (SAMPLE(?streetVal) AS ?street)
+  (SAMPLE(?postalVal) AS ?postal)
+  (SAMPLE(?cityVal) AS ?city)
+  (SAMPLE(?phoneVal) AS ?phone)
+  (SAMPLE(?webVal) AS ?web)
+  (SAMPLE(?imgUrl) AS ?img)
+  (GROUP_CONCAT(DISTINCT ?imgUrl; separator="|") AS ?imgs)
+  (GROUP_CONCAT(DISTINCT ?type; separator=",") AS ?types)
+  (GROUP_CONCAT(DISTINCT ?cuisineVal; separator=", ") AS ?cuisines)
+WHERE {${geoFilter}
+  VALUES ?targetType {
+    schema:Restaurant
+    schema:CafeOrCoffeeShop
+  }
+  ?s a ?targetType .
+  OPTIONAL { ?s a ?type }
+  ?s schema:name ?nameDe .
+  FILTER(lang(?nameDe) = "de" || lang(?nameDe) = "")
+  OPTIONAL {
+    ?s schema:description ?descDe .
+    FILTER(isLiteral(?descDe) && (lang(?descDe) = "de" || lang(?descDe) = ""))
+  }
+  OPTIONAL {
+    ?s schema:geo ?geo .
+    ?geo schema:latitude ?latVal .
+    ?geo schema:longitude ?lngVal .
+  }
+  OPTIONAL {
+    ?s schema:address ?addr .
+    OPTIONAL { ?addr schema:streetAddress ?streetVal }
+    OPTIONAL { ?addr schema:postalCode ?postalVal }
+    OPTIONAL { ?addr schema:addressLocality ?cityVal }
+  }
+  OPTIONAL { ?s schema:telephone ?phoneVal }
+  OPTIONAL { ?s schema:url ?webVal }
+  OPTIONAL { ?s schema:servesCuisine ?cuisineVal }
+  OPTIONAL {
+    ?s schema:image ?imgObj .
+    ?imgObj schema:contentUrl ?imgUrl .
+  }
+}
+GROUP BY ?s
+LIMIT 300`;
+}
+
+function convertGastroBindingToPoi(b, refLat, refLng) {
+  const types = b.types && b.types.value ? b.types.value.split(",") : ["https://schema.org/Restaurant"];
+  const isRestaurant = types.some((t) => t.includes("Restaurant"));
+  const isCafe = types.some((t) => t.includes("Cafe") || t.includes("CoffeeShop"));
+
+  let images = [];
+  if (b.imgs && b.imgs.value) {
+    const urls = b.imgs.value.split("|").map((u) => u.trim()).filter(Boolean);
+    images = urls.map((u) => ({ "@type": "ImageObject", "schema:contentUrl": u }));
+  } else if (b.img && b.img.value) {
+    images = [{ "@type": "ImageObject", "schema:contentUrl": b.img.value }];
+  }
+
+  const lat = b.lat && b.lat.value ? parseFloat(b.lat.value) : null;
+  const lng = b.lng && b.lng.value ? parseFloat(b.lng.value) : null;
+
+  let distKm = null;
+  if (lat !== null && lng !== null && typeof refLat === "number" && typeof refLng === "number") {
+    const calc = distanceKm({ lat: refLat, lng: refLng }, { lat, lng });
+    if (!isNaN(calc)) distKm = Math.round(calc * 10) / 10;
+  }
+
+  const name = b.name && b.name.value ? b.name.value : "Gastrobetrieb";
+  const desc = b.desc && b.desc.value ? b.desc.value : "";
+
+  return {
+    id: b.s ? b.s.value : "",
+    name,
+    description: desc,
+    lat,
+    lng,
+    distanceKm: distKm,
+    street: b.street ? b.street.value : "",
+    postalCode: b.postal ? b.postal.value : "",
+    city: b.city ? b.city.value : "",
+    phone: b.phone ? b.phone.value : "",
+    website: b.web ? b.web.value : "",
+    cuisines: b.cuisines ? b.cuisines.value : "",
+    types,
+    isRestaurant,
+    isCafe,
+    imageUrl: images.length > 0 ? images[0]["schema:contentUrl"] : "",
+    images,
+    raw: b,
+  };
+}
+
 function buildSparqlPrefixes() {
   return [
     "PREFIX schema: <https://schema.org/>",
