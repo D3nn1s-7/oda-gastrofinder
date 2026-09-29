@@ -361,8 +361,20 @@ WHERE {${geoFilter}
   OPTIONAL { ?s schema:url ?webVal }
   OPTIONAL { ?s schema:servesCuisine ?cuisineVal }
   OPTIONAL {
-    ?s schema:image ?imgObj .
-    ?imgObj schema:contentUrl ?imgUrl .
+    {
+      ?s schema:image ?imgObj .
+      ?imgObj schema:contentUrl ?imgUrl .
+    } UNION {
+      ?s schema:image ?imgDirect .
+      FILTER(isIRI(?imgDirect))
+      BIND(STR(?imgDirect) AS ?imgUrl)
+    } UNION {
+      ?s schema:photo ?photoObj .
+      ?photoObj schema:contentUrl ?imgUrl .
+    } UNION {
+      ?s schema:thumbnailUrl ?thumbUrl .
+      BIND(STR(?thumbUrl) AS ?imgUrl)
+    }
   }
 }
 GROUP BY ?s
@@ -1599,6 +1611,7 @@ function renderGastroShell(root, state) {
   if (root.classList && root.classList.add) root.classList.add("gf-root");
   const regionName = state.region ? state.region.ort : "Suchgebiet wird geladen";
   const radius = state.region ? `${state.region.radiusKm} km Umkreis` : "Umkreis wird geladen";
+  const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
   root.innerHTML = `<section class="gf-fullscreen-wrapper gf-shell" aria-label="Gastrofinder im Suchgebiet">
     <div class="gf-map-layer">
       <div class="gf-map-canvas" data-gf="map" aria-label="Karte der geladenen Gastro-Betriebe">
@@ -1607,9 +1620,12 @@ function renderGastroShell(root, state) {
       </div>
     </div>
     <div class="gf-brandbar" data-gf-brandbar>
-      <strong>Gastrofinder</strong>
-      <span>Genussatlas · ${escapeHtml(regionName)}</span>
-      <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      <img src="assets/odas-app-icon.svg" class="gf-brandbar-logo" alt="Logo" onerror="this.src='favicon.png'">
+      <div class="gf-brandbar-text">
+        <strong>${escapeHtml(appTitle)}</strong>
+        <span>Genussatlas · ${escapeHtml(regionName)}</span>
+        <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      </div>
     </div>
     <div class="gf-floating-actions" data-gf-floating-actions aria-label="Kartenaktionen">
       <button type="button" class="gf-floating-button gf-floating-primary" data-gf-catalog-toggle data-gf-control="catalog">${gastroIcon("grid")}<span>Katalog</span></button>
@@ -1618,7 +1634,13 @@ function renderGastroShell(root, state) {
     </div>
     <aside id="gf-${uid}-cockpit" class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
       <div class="gf-cockpit-header">
-        <div class="gf-cockpit-brand"><span class="gf-cockpit-mark">${gastroIcon("fork")}</span><div><strong>Gastrofinder</strong><span>Genussatlas</span></div></div>
+        <div class="gf-cockpit-brand">
+          <img src="assets/odas-app-icon.svg" class="gf-cockpit-logo" alt="Logo" onerror="this.src='favicon.png'">
+          <div class="gf-cockpit-title-wrap">
+            <strong class="gf-cockpit-title">${escapeHtml(appTitle)}</strong>
+            <span class="gf-cockpit-subtitle">${escapeHtml(regionName)} · ${escapeHtml(radius)}</span>
+          </div>
+        </div>
         <button type="button" class="gf-cockpit-toggle" data-gf-cockpit-toggle data-gf-control="cockpit" aria-expanded="true" aria-label="Cockpit einklappen">${gastroIcon("arrow")}</button>
       </div>
       <div class="gf-cockpit-search">
@@ -1692,10 +1714,23 @@ function updateGastroView(root, state) {
     const radius = `${state.region.radiusKm || 25} km Umkreis`;
     const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
     brandbar.innerHTML = `
-      <strong>${escapeHtml(appTitle)}</strong>
-      <span>Genussatlas · ${escapeHtml(regionName)}</span>
-      <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      <img src="assets/odas-app-icon.svg" class="gf-brandbar-logo" alt="Logo" onerror="this.src='favicon.png'">
+      <div class="gf-brandbar-text">
+        <strong>${escapeHtml(appTitle)}</strong>
+        <span>Genussatlas · ${escapeHtml(regionName)}</span>
+        <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      </div>
     `;
+  }
+  const cockpitBrand = root.querySelector('.gf-cockpit-brand');
+  if (cockpitBrand && state.region) {
+    const regionName = state.region.ort || "Region";
+    const radius = `${state.region.radiusKm || 25} km Umkreis`;
+    const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
+    const titleEl = cockpitBrand.querySelector('.gf-cockpit-title');
+    if (titleEl) titleEl.textContent = appTitle;
+    const subtitleEl = cockpitBrand.querySelector('.gf-cockpit-subtitle');
+    if (subtitleEl) subtitleEl.textContent = `${regionName} · ${radius}`;
   }
   const view = deriveGastroView(state);
   const focusedId = typeof document !== "undefined" && document.activeElement && typeof document.activeElement.getAttribute === "function"
@@ -2471,6 +2506,21 @@ function bindGastroShellEvents(root, state) {
   if (area) addGastroListener(area, "click", () => showGastroArea(state), state);
   const share = root.querySelector('[data-gf-share]');
   if (share) addGastroListener(share, "click", () => openQrModal(state), state);
+  const menuBtn = root.querySelector('[data-gf-control="menu"], [data-gf-menu]');
+  if (menuBtn) {
+    addGastroListener(menuBtn, "click", () => {
+      ensureGlobalOffcanvasSetup();
+      ensureQrNavMenuItem(state);
+      const offcanvasNav = document.getElementById("offcanvasNavbar");
+      if (offcanvasNav && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Offcanvas) {
+        let oc = window.bootstrap.Offcanvas.getInstance(offcanvasNav);
+        if (!oc) {
+          oc = new window.bootstrap.Offcanvas(offcanvasNav);
+        }
+        oc.show();
+      }
+    }, state);
+  }
   if (typeof ResizeObserver === "function") {
     state.runtime.resizeObserver = new ResizeObserver(() => invalidateGastroMapSize(state));
     const mapLayer = root.querySelector(".gf-fullscreen-wrapper");
@@ -2561,6 +2611,35 @@ function initGastroMap(root, state) {
       savedPosition ? [savedPosition.lat, savedPosition.lng] : [state.region.lat, state.region.lng],
       savedPosition && Number.isFinite(savedPosition.zoom) ? savedPosition.zoom : 12,
     );
+    if (L.Control && typeof L.Control.extend === "function") {
+      const HomeControl = L.Control.extend({
+        options: { position: "bottomright" },
+        onAdd: function() {
+          const container = (L.DomUtil && typeof L.DomUtil.create === "function")
+            ? L.DomUtil.create("div", "gf-home-control-bar leaflet-bar")
+            : document.createElement("div");
+          const btn = (L.DomUtil && typeof L.DomUtil.create === "function")
+            ? L.DomUtil.create("button", "gf-map-home-btn", container)
+            : document.createElement("button");
+          btn.type = "button";
+          btn.innerHTML = gastroIcon("home");
+          btn.title = `Ausgangsansicht (${escapeHtml(state.region ? state.region.ort : "")}) wiederherstellen`;
+          btn.setAttribute("aria-label", "Karte auf Ausgangsansicht zurücksetzen");
+          if (L.DomEvent) {
+            if (typeof L.DomEvent.disableClickPropagation === "function") L.DomEvent.disableClickPropagation(btn);
+            if (typeof L.DomEvent.disableScrollPropagation === "function") L.DomEvent.disableScrollPropagation(btn);
+          }
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (typeof map.flyTo === "function" && state.region) map.flyTo([state.region.lat, state.region.lng], 12, { duration: 0.8 });
+            if (typeof map.closePopup === "function") map.closePopup();
+          });
+          return container;
+        }
+      });
+      new HomeControl().addTo(map);
+    }
+
     if (L.control && typeof L.control.zoom === "function") {
       L.control.zoom({ position: "bottomright" }).addTo(map);
     }
@@ -2582,7 +2661,7 @@ function initGastroMap(root, state) {
       fillOpacity: 0.08,
     }).addTo(map);
     const controls = root.querySelector('[data-gf="map-controls"]');
-    if (controls && typeof document !== "undefined" && document.createElement) {
+    if (controls && (!L.Control || typeof L.Control.extend !== "function") && typeof document !== "undefined" && document.createElement) {
       const homeButton = document.createElement("button");
       homeButton.type = "button";
       homeButton.className = "gf-home-button";
@@ -2811,6 +2890,8 @@ function renderGastroSecondaryPage(page, content) {
 
 function renderPageOverride(page) {
   if (page === "startseite") return null;
+  ensureGlobalOffcanvasSetup();
+  setTimeout(() => ensureQrNavMenuItem(), 0);
   const info = getGastroSecondaryPageInfo(page);
   if (!info) return null;
   let content = typeof configData !== "undefined" && configData ? configData[page] : "";
@@ -2844,4 +2925,62 @@ function onPageLeave(page) {
 
 function addToHead() {
   // Die Kartenbibliotheken werden bewusst erst nach der ersten sichtbaren Shell geladen.
+}
+
+function ensureGlobalOffcanvasSetup() {
+  if (typeof document === "undefined" || !document.getElementById || !document.body || typeof document.body.appendChild !== "function") return;
+  const offcanvasNav = document.getElementById("offcanvasNavbar");
+  if (offcanvasNav && offcanvasNav.parentElement !== document.body) {
+    document.body.appendChild(offcanvasNav);
+  }
+}
+
+function ensureQrNavMenuItem(state) {
+  if (typeof document === "undefined" || !document.getElementById || typeof document.createElement !== "function") return;
+  const offcanvasNav = document.getElementById("offcanvasNavbar");
+  if (!offcanvasNav) return;
+  const navList = offcanvasNav.querySelector ? offcanvasNav.querySelector(".navbar-nav") : null;
+  if (!navList || (navList.querySelector && navList.querySelector("#gf-qr-nav-item")) || typeof navList.appendChild !== "function") return;
+
+  const qrLi = document.createElement("li");
+  qrLi.className = "nav-item";
+  qrLi.id = "gf-qr-nav-item";
+  qrLi.innerHTML = `
+    <a class="nav-link gf-qr-nav-link" href="#qr-code" role="button">
+      <span class="gf-nav-icon">${gastroIcon("share")}</span>
+      <span>Auf dem Smartphone öffnen</span>
+    </a>
+  `;
+  const link = qrLi.querySelector("a");
+  if (link && typeof link.addEventListener === "function") {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Offcanvas) {
+        const oc = window.bootstrap.Offcanvas.getInstance(offcanvasNav);
+        if (oc) oc.hide();
+      }
+      openQrModal(state || (document.getElementById("main-content") && document.getElementById("main-content").gastroState));
+    });
+  }
+  navList.appendChild(qrLi);
+}
+
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+  const initGlobalMenu = () => {
+    ensureGlobalOffcanvasSetup();
+    ensureQrNavMenuItem();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initGlobalMenu);
+  } else {
+    initGlobalMenu();
+  }
+
+  document.addEventListener("click", (e) => {
+    const toggler = e.target && e.target.closest && e.target.closest('[data-bs-toggle="offcanvas"][data-bs-target="#offcanvasNavbar"], .navbar-toggler, [data-gf-control="menu"], [data-gf-menu]');
+    if (toggler) {
+      ensureGlobalOffcanvasSetup();
+      ensureQrNavMenuItem();
+    }
+  }, true);
 }

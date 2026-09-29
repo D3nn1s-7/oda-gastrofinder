@@ -198,13 +198,13 @@ body.gf-app-fullscreen #main-content {
   top: 18px;
   left: 50%;
   z-index: 1000;
-  display: grid;
-  gap: .08rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
   min-width: 15rem;
-  max-width: min(32rem, calc(100vw - 34rem));
-  padding: .65rem 1.15rem .7rem;
+  max-width: min(34rem, calc(100vw - 34rem));
+  padding: .55rem 1.15rem .6rem;
   overflow: hidden;
-  text-align: center;
   background: var(--gf-surface-glass);
   border: 1px solid rgba(255, 255, 255, .84);
   border-radius: 1rem;
@@ -212,6 +212,22 @@ body.gf-app-fullscreen #main-content {
   transform: translateX(-50%);
   backdrop-filter: blur(16px) saturate(125%);
   -webkit-backdrop-filter: blur(16px) saturate(125%);
+}
+
+.gf-brandbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex: 0 0 auto;
+  box-shadow: 0 2px 6px rgba(25, 54, 41, 0.2);
+  object-fit: cover;
+}
+
+.gf-brandbar-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
 }
 
 .gf-brandbar strong {
@@ -335,7 +351,22 @@ body.gf-app-fullscreen #main-content {
 .gf-cockpit-brand {
   display: flex;
   align-items: center;
-  gap: .6rem;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.gf-cockpit-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  flex: 0 0 auto;
+  box-shadow: 0 2px 8px rgba(25, 54, 41, 0.25);
+  object-fit: cover;
+}
+
+.gf-cockpit-title-wrap {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
@@ -351,21 +382,25 @@ body.gf-app-fullscreen #main-content {
 }
 
 .gf-cockpit-brand strong,
-.gf-cockpit-brand span {
+.gf-cockpit-brand span,
+.gf-cockpit-title-wrap strong,
+.gf-cockpit-title-wrap span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.gf-cockpit-brand strong {
+.gf-cockpit-brand strong,
+.gf-cockpit-title-wrap strong {
   color: var(--gf-forest-dark);
   font-family: Fraunces, Georgia, serif;
   font-size: 1.05rem;
   font-weight: 500;
 }
 
-.gf-cockpit-brand span {
+.gf-cockpit-brand span,
+.gf-cockpit-title-wrap span {
   color: var(--gf-muted);
   font-size: .7rem;
 }
@@ -742,29 +777,49 @@ body.gf-app-fullscreen #main-content {
   right: 1rem;
   bottom: 5.2rem;
   z-index: 800;
-  display: grid;
+  display: none;
   gap: .4rem;
 }
 
+.gf-home-control-bar {
+  margin-bottom: 22px !important;
+  margin-right: 14px !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
 .gf-home-button,
-.gf-map-controls button {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  color: var(--gf-forest);
-  background: var(--gf-surface-glass-strong);
-  border: 1px solid var(--gf-line);
-  border-radius: .65rem;
-  box-shadow: var(--gf-shadow-soft);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+.gf-map-controls button,
+.gf-map-home-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  color: var(--gf-forest) !important;
+  background: #fff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: all .15s ease !important;
 }
 
 .gf-home-button:hover,
-.gf-map-controls button:hover {
-  color: var(--gf-copper-dark);
-  background: #fff;
+.gf-map-controls button:hover,
+.gf-map-home-btn:hover {
+  color: var(--gf-copper-dark) !important;
+  background: #f8fafc !important;
+}
+
+.leaflet-bottom.leaflet-right .leaflet-control-zoom {
+  margin-bottom: 6px !important;
+  margin-right: 14px !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
 }
 
 .gf-edge-tab {
@@ -815,37 +870,39 @@ body.gf-app-fullscreen #main-content {
 }
 
 .gf-status {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  left: 18px;
-  z-index: 800;
-  min-height: 1.2rem;
-  margin: 0;
-  color: var(--gf-ink);
-  font-size: .72rem;
-  text-align: center;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, .8);
-  pointer-events: none;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .gf-legend {
   position: absolute;
-  right: 18px;
-  bottom: 4.4rem;
-  z-index: 400;
-  gap: .65rem;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
   flex-wrap: wrap;
-  max-width: min(28rem, calc(100vw - 36px));
-  padding: .42rem .6rem;
+  max-width: min(34rem, calc(100vw - 120px));
+  padding: .42rem .85rem;
   color: var(--gf-ink);
   background: var(--gf-surface-glass);
   border: 1px solid rgba(255, 255, 255, .82);
   border-radius: 999px;
   box-shadow: var(--gf-shadow-soft);
-  font-size: .66rem;
+  font-size: .68rem;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
 
 .gf-legend span {
@@ -1576,13 +1633,17 @@ body.gf-app-fullscreen #main-content {
   }
 
   .gf-map-controls {
-    right: .65rem;
-    bottom: 5.7rem;
+    display: none !important;
   }
 
-  .leaflet-control-zoom {
+  .gf-home-control-bar {
     margin-right: .65rem !important;
-    margin-bottom: 5.7rem !important;
+    margin-bottom: 8px !important;
+  }
+
+  .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+    margin-right: .65rem !important;
+    margin-bottom: 5.6rem !important;
   }
 
   .gf-area-button {
@@ -1591,11 +1652,12 @@ body.gf-app-fullscreen #main-content {
   }
 
   .gf-legend {
-    right: .65rem;
-    bottom: 5.7rem;
-    left: .65rem;
+    left: 50%;
+    right: auto;
+    bottom: 5.5rem;
+    transform: translateX(-50%);
     justify-content: center;
-    max-width: none;
+    max-width: calc(100vw - 120px);
     border-radius: .75rem;
   }
 
@@ -2353,3 +2415,97 @@ body:not(.gf-app-fullscreen) > footer {
   display: block;
   margin: 0 auto;
 }
+
+/* ==========================================================================
+   Offcanvas Burger-Menü Styling
+   ========================================================================== */
+
+#offcanvasNavbar.offcanvas {
+  position: fixed !important;
+  z-index: 1065 !important;
+  background: var(--gf-surface-glass-strong) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-left: 1px solid var(--gf-line) !important;
+  box-shadow: -12px 0 36px rgba(32, 53, 42, 0.16) !important;
+  width: 320px !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#offcanvasNavbar .offcanvas-header {
+  padding: 20px 20px 16px 20px;
+  border-bottom: 1px solid var(--gf-line);
+  background: transparent;
+}
+
+#offcanvasNavbar .offcanvas-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gf-forest-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+#offcanvasNavbar .btn-close {
+  background-color: var(--gf-surface);
+  border-radius: 50%;
+  padding: 8px;
+  opacity: 0.75;
+  transition: all 0.15s ease;
+}
+
+#offcanvasNavbar .btn-close:hover {
+  opacity: 1;
+  background-color: #f0e8db;
+  transform: scale(1.05);
+}
+
+#offcanvasNavbar .offcanvas-body {
+  padding: 16px;
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+}
+
+#offcanvasNavbar .navbar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#offcanvasNavbar .navbar-nav .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--gf-ink);
+  border-radius: 12px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+#offcanvasNavbar .navbar-nav .nav-link:hover {
+  color: var(--gf-copper-dark);
+  background: rgba(166, 107, 50, 0.08);
+  transform: translateX(4px);
+}
+
+#offcanvasNavbar .navbar-nav .nav-link.active {
+  background: linear-gradient(135deg, var(--gf-forest), var(--gf-forest-dark)) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(40, 84, 61, 0.25) !important;
+}
+
+.gf-qr-nav-link .gf-nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
