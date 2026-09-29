@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-09-29
+- **FIX:** Kartenklick- und Auswahl-Lifecycle entkoppelt (Option 1A) – Schließen des Detailmodals setzt die Kartenauswahl sauber zurück (`hidden.bs.modal`), Klick auf Listeneintrag fokussiert auf der Karte ohne dauerhafte Hervorhebung.
+- **STYLE:** Vollständige Harmonisierung der Katalogansicht mit der Gourmet-Farbpalette (Option 2A) – Entfernung von Bootstrap-Standardfarben (Blau) zugunsten von `.gf-btn-outline-forest`, `.gf-btn-forest`, warmen Terracotta-Akzenten und Waldgrün-Badges.
+- **FEAT:** Interaktive Leaflet-Marker-Popups (Option 3A) – Klick auf Kartenpin öffnet Vorschau-Popup mit Miniatur, Titel, Distanz, Typ-Badges und Schnellaktion "Details ansehen »".
+- **FEAT:** ODTA-Rohdaten-Kopierfunktion im Detail-Modal per Clipboard-API mit visuellem Feedback.
+
 ## 1.2.0 - 2026-09-29
 - **FEAT:** Gold-Standard-Angleichung an Referenz-Architektur (oda-sehenswuerdigkeiten).
 - **FIX:** Behebung des übergroßen SVG-Uhr-Icons im Detail-Modal durch globale Icon-Regeln und explizite SVG-Dimensionen.
