@@ -2167,15 +2167,81 @@ function closeGastroDetails(state, root = null) {
   return true;
 }
 
+function renderGastroCatalogCard(poi, uid = "gf-catalog", selected = false) {
+  const item = poi || {};
+  const firstImage = (item.images && item.images[0]) || null;
+  const imgUrl = item.imageUrl || (firstImage && (firstImage.url || firstImage["schema:contentUrl"])) || "";
+  const imgAlt = (firstImage && firstImage.title) || item.name || "Gastrofinder-Bild";
+  const name = item.name || "Gastronomiebetrieb";
+  const locality = item.city || (item.address && (item.address.locality || item.address.city)) || "";
+  const street = item.street || (item.address && item.address.street) || "";
+  const place = [locality, street].filter(Boolean).join(" · ") || (item.city || "Ort nicht angegeben");
+  const distance = Number.isFinite(Number(item.distanceKm))
+    ? `${Number(item.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km`
+    : (item.distanceKm != null ? `${item.distanceKm} km` : "");
+
+  let desc = item.description || "";
+  if (typeof desc !== "string" || desc.startsWith("http://") || desc.startsWith("https://") || desc.includes("onlim.com/entity")) {
+    desc = "";
+  }
+  const descExcerpt = desc ? desc.slice(0, 140) + (desc.length > 140 ? " …" : "") : "Keine ausführliche Beschreibung verfügbar.";
+
+  const typeLabels = gastroTypeLabels(item);
+  const cuisine = Array.isArray(item.cuisines) ? item.cuisines.join(", ") : (item.cuisines || "");
+
+  return `<div class="gf-catalog-card${selected ? " is-selected" : ""}" data-gf-catalog-card data-gf-id="${escapeHtml(item.id || "")}">
+    <div class="gf-catalog-img-wrap">
+      ${imgUrl ? `
+        <img src="${escapeHtml(imgUrl)}" class="gf-catalog-img" alt="${escapeHtml(imgAlt)}" loading="lazy">
+      ` : `
+        <div class="gf-catalog-img-fallback">${item.isCafe ? "☕" : "🍴"}</div>
+      `}
+      ${distance ? `<span class="gf-catalog-dist-badge">${escapeHtml(distance)}</span>` : ""}
+    </div>
+    <div class="gf-catalog-body">
+      <h3 class="gf-catalog-card-title">${escapeHtml(name)}</h3>
+      <div class="gf-catalog-meta text-muted small mb-2">${escapeHtml(place)}</div>
+      <p class="gf-catalog-card-desc">${escapeHtml(descExcerpt)}</p>
+      <div class="gf-badges mb-3">
+        ${typeLabels.map((label) => `<span class="gf-badge${label === "Café" ? " gf-badge-cafe" : ""}">${escapeHtml(label)}</span>`).join("")}
+        ${cuisine ? `<span class="gf-badge gf-badge-cuisine">${escapeHtml(cuisine)}</span>` : ""}
+      </div>
+      <div class="gf-catalog-actions">
+        <button type="button" class="btn btn-sm btn-outline-primary gf-catalog-map-action" data-gf-catalog-map data-gf-id="${escapeHtml(item.id || "")}">
+          ${gastroIcon("map")} <span>Auf Karte</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-primary gf-catalog-detail-action" data-gf-catalog-detail data-gf-select data-gf-id="${escapeHtml(item.id || "")}">
+          <span>Details »</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderGastroCatalog(view, state) {
   const current = view || deriveGastroView(state);
   const limit = Math.max(24, Number(state && state.visible && state.visible.catalog) || 24);
   const items = current.pois.slice(0, limit);
   const uid = state && state.runtime && state.runtime.uid ? state.runtime.uid : "gf-catalog";
   const cards = items.length
-    ? items.map((poi) => `<div class="gf-catalog-card" data-gf-catalog-card data-gf-id="${escapeHtml(poi.id || "")}">${renderGastroCard(poi, uid, poi.id === state.selectedId)}<button type="button" class="gf-button gf-button-secondary gf-catalog-map-action" data-gf-catalog-map data-gf-id="${escapeHtml(poi.id || "")}">${gastroIcon("map")} Auf Karte</button></div>`).join("")
-    : `<div class="gf-empty">Keine passenden Orte gefunden.</div>`;
-  return `<div class="gf-catalog-overlay" data-gf-catalog-overlay role="dialog" aria-modal="true" aria-labelledby="gf-${uid}-catalog-title"><header class="gf-catalog-header"><div><p class="gf-eyebrow">Gastrofinder Katalog</p><h2 id="gf-${uid}-catalog-title">Genussatlas</h2><p>${current.pois.length} ${current.pois.length === 1 ? "Ort" : "Orte"} im geladenen Bestand</p></div><button type="button" class="gf-button gf-button-secondary" data-gf-catalog-close>${gastroIcon("arrow")} Zurück zur Karte</button></header><div class="gf-catalog-scroll"><div class="gf-catalog-grid">${cards}</div></div></div>`;
+    ? items.map((poi) => renderGastroCatalogCard(poi, uid, poi.id === state.selectedId)).join("")
+    : `<div class="gf-empty col-12 text-center py-5"><h3 class="h5 text-muted mb-2">Keine passenden Orte gefunden</h3><p class="small text-muted">Bitte passe die Suchbegriffe oder Filter an.</p></div>`;
+
+  return `<div class="gf-catalog-overlay" data-gf-catalog-overlay role="dialog" aria-modal="true" aria-labelledby="gf-${uid}-catalog-title">
+    <header class="gf-catalog-header">
+      <div>
+        <p class="gf-eyebrow">Gastrofinder Katalog</p>
+        <h2 id="gf-${uid}-catalog-title">Genussatlas (${current.pois.length})</h2>
+        <p class="gf-catalog-subtitle">${current.pois.length} ${current.pois.length === 1 ? "Ort" : "Orte"} im geladenen Bestand</p>
+      </div>
+      <button type="button" class="gf-button gf-button-secondary" data-gf-catalog-close>
+        ${gastroIcon("arrow")} <span>Zurück zur Karte</span>
+      </button>
+    </header>
+    <div class="gf-catalog-scroll">
+      <div class="gf-catalog-grid">${cards}</div>
+    </div>
+  </div>`;
 }
 
 function refreshGastroCatalog(root, state) {
@@ -2347,11 +2413,12 @@ function bindGastroShellEvents(root, state) {
       updateGastroView(root, state);
       return;
     }
-    if (target.hasAttribute("data-gf-select") && target.closest("[data-gf-catalog-card]")) {
+    if ((target.hasAttribute("data-gf-select") || target.hasAttribute("data-gf-catalog-detail")) && target.closest("[data-gf-catalog-card]")) {
       const id = target.getAttribute("data-gf-id");
       if (!id) return;
       state.runtime.detailOpener = target;
-      selectGastroPoi(state, id, () => updateGastroView(root, state));
+      openDetailModal(state, id);
+      return;
     }
   }, state);
   const list = root.querySelector('[data-gf="results-list"]');

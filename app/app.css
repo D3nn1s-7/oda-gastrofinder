@@ -991,30 +991,102 @@ body.gf-app-fullscreen #main-content {
 
 .gf-catalog-card {
   min-width: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   overflow: hidden;
-  background: var(--gf-surface-strong);
-  border: 1px solid var(--gf-line);
-  border-radius: 1rem;
-  box-shadow: var(--gf-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
-.gf-catalog-card .gf-card {
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+.gf-catalog-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
-.gf-catalog-card .gf-card-media {
-  height: 10rem;
+.gf-catalog-img-wrap {
+  position: relative;
+  height: 180px;
+  background: #f1f5f9;
 }
 
-.gf-catalog-card .gf-card-select {
-  display: none;
+.gf-catalog-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.gf-catalog-map-action {
-  width: calc(100% - 1.2rem);
-  margin: 0 .6rem .6rem;
+.gf-catalog-img-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  font-size: 2.5rem;
+  color: #94a3b8;
+}
+
+.gf-catalog-dist-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.gf-catalog-body {
+  padding: 16px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.gf-catalog-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.gf-catalog-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.gf-catalog-card-desc {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1;
+  line-height: 1.5;
+}
+
+.gf-catalog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.gf-catalog-actions .btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 0.82rem;
 }
 
 .gf-catalog-open .gf-map-controls,
