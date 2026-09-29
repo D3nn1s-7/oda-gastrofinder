@@ -1600,6 +1600,49 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
   `;
 }
 
+function renderGastroLoadingSkeleton() {
+  return `
+    <div class="gf-skeleton-list" aria-label="Daten werden geladen">
+      <div class="gf-skeleton-card">
+        <div class="gf-skeleton-thumb"></div>
+        <div class="gf-skeleton-lines">
+          <div class="gf-skeleton-line gf-skeleton-title"></div>
+          <div class="gf-skeleton-line gf-skeleton-subtitle"></div>
+          <div class="gf-skeleton-line gf-skeleton-meta"></div>
+        </div>
+      </div>
+      <div class="gf-skeleton-card">
+        <div class="gf-skeleton-thumb"></div>
+        <div class="gf-skeleton-lines">
+          <div class="gf-skeleton-line gf-skeleton-title"></div>
+          <div class="gf-skeleton-line gf-skeleton-subtitle"></div>
+          <div class="gf-skeleton-line gf-skeleton-meta"></div>
+        </div>
+      </div>
+      <div class="gf-skeleton-card">
+        <div class="gf-skeleton-thumb"></div>
+        <div class="gf-skeleton-lines">
+          <div class="gf-skeleton-line gf-skeleton-title"></div>
+          <div class="gf-skeleton-line gf-skeleton-subtitle"></div>
+          <div class="gf-skeleton-line gf-skeleton-meta"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function hideGastroLoadingOverlay(root, uid) {
+  if (!root || typeof root.querySelector !== "function") return;
+  const overlay = (uid && root.querySelector(`#gf-${uid}-loading-overlay`)) || root.querySelector(".gf-loading-overlay");
+  if (!overlay) return;
+  overlay.classList.add("gf-fade-out");
+  setTimeout(() => {
+    if (overlay && overlay.parentNode) {
+      overlay.style.display = "none";
+    }
+  }, 400);
+}
+
 function renderGastroDetails(poi, uid = "gf-detail", status = "ready") {
   return renderGastroHeroDetails(poi, uid, status);
 }
@@ -1658,6 +1701,19 @@ function renderGastroShell(root, state) {
     <div class="gf-map-controls" data-gf="map-controls" aria-label="Kartensteuerung"></div>
     <p class="gf-status" data-gf="status" role="status" aria-live="polite"></p>
     <div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div>
+    
+    <!-- Glassmorphism Lade-Overlay -->
+    <div id="gf-${uid}-loading-overlay" class="gf-loading-overlay" data-gf-loading-overlay>
+      <div class="gf-loading-card">
+        <div class="gf-loading-icon-wrap">
+          <img src="assets/odas-app-icon.svg" class="gf-loading-icon" alt="Laden…" onerror="this.src='favicon.png'">
+          <div class="gf-loading-spinner-ring"></div>
+        </div>
+        <h3 class="gf-loading-title">Gastronomiebetriebe werden geladen…</h3>
+        <p class="gf-loading-subtitle">DZT Knowledge Graph &bull; ${escapeHtml(regionName)}</p>
+      </div>
+    </div>
+
     <div class="modal fade gf-detail-modal" id="gf-${uid}-detail-modal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg overflow-hidden" id="gf-${uid}-detail-modal-content"></div>
@@ -1744,10 +1800,13 @@ function updateGastroView(root, state) {
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
     const limit = state.view === "catalog" ? state.visible.catalog : state.visible.list;
-    const visible = view.pois.slice(0, limit);
-    list.innerHTML = visible.length
-      ? visible.map((poi) => renderGastroCard(poi, state.runtime.uid, poi.id === state.selectedId)).join("")
-      : `<div class="gf-empty">${state.page.done ? "Keine passenden Orte gefunden." : "Keine passenden Orte im geladenen Bestand. Weitere Daten können noch folgen."}</div>`;
+    if (visible.length) {
+      list.innerHTML = visible.map((poi) => renderGastroCard(poi, state.runtime.uid, poi.id === state.selectedId)).join("");
+    } else if (state.page.busy) {
+      list.innerHTML = renderGastroLoadingSkeleton();
+    } else {
+      list.innerHTML = `<div class="gf-empty">${state.page.done ? "Keine passenden Orte gefunden." : "Keine passenden Orte im geladenen Bestand. Weitere Daten können noch folgen."}</div>`;
+    }
   }
   if (scroll) {
     const key = state.view === "catalog" ? "catalog" : "list";
@@ -1776,7 +1835,9 @@ function updateGastroView(root, state) {
   const load = root.querySelector('[data-gf-load-next]');
   if (load) {
     load.disabled = state.page.busy || state.page.done;
-    load.textContent = state.page.busy ? "Wird geladen …" : "Weitere Daten laden";
+    load.innerHTML = state.page.busy
+      ? '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Wird geladen …'
+      : "Weitere Daten laden";
   }
   const more = root.querySelector('[data-gf-show-more]');
   if (more) {
@@ -1805,6 +1866,9 @@ function updateGastroView(root, state) {
   bindGastroImageFallbacks(root);
   updateGastroStatus(root, state, view);
   updateGastroMap(root, state, view);
+  if (state.byId.size > 0 || state.page.done || state.page.error) {
+    hideGastroLoadingOverlay(root, state.runtime.uid);
+  }
 }
 
 function galleryImageMarkup(image) {
@@ -2863,11 +2927,15 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
       await loadNextGastroPage(state, () => {
         if (stillCurrent()) updateGastroView(enclosingHtmlDivElement, state);
       });
+      if (stillCurrent()) {
+        hideGastroLoadingOverlay(enclosingHtmlDivElement, state.runtime.uid);
+      }
     }
   } catch (error) {
     if (!stillCurrent()) return;
     state.page.error = error;
     updateGastroView(enclosingHtmlDivElement, state);
+    hideGastroLoadingOverlay(enclosingHtmlDivElement, state.runtime.uid);
   }
 }
 
