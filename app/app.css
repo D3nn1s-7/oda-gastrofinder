@@ -782,7 +782,8 @@ body.gf-app-fullscreen #main-content {
 }
 
 .gf-home-control-bar {
-  margin-bottom: 8px !important;
+  margin-bottom: 22px !important;
+  margin-right: 14px !important;
   border: 1px solid rgba(203, 213, 225, 0.9) !important;
   border-radius: 8px !important;
   overflow: hidden;
@@ -814,7 +815,7 @@ body.gf-app-fullscreen #main-content {
 }
 
 .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-  margin-bottom: 1.2rem !important;
+  margin-bottom: 6px !important;
   margin-right: 14px !important;
   border-radius: 8px !important;
   overflow: hidden;
@@ -869,18 +870,15 @@ body.gf-app-fullscreen #main-content {
 }
 
 .gf-status {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  left: 18px;
-  z-index: 800;
-  min-height: 1.2rem;
-  margin: 0;
-  color: var(--gf-ink);
-  font-size: .72rem;
-  text-align: center;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, .8);
-  pointer-events: none;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .gf-legend {
