@@ -1172,14 +1172,16 @@ function disposeGastroRuntime(state) {
   if (!state || !state.runtime) return;
   const runtime = state.runtime;
   runtime.active = false;
-  runtime.generation += 1;
-  state.detail.seq += 1;
+  runtime.generation = (runtime.generation || 0) + 1;
+  if (state.detail) state.detail.seq = (state.detail.seq || 0) + 1;
   if (runtime.pageAbort && typeof runtime.pageAbort.abort === "function") runtime.pageAbort.abort();
   if (runtime.detailAbort && typeof runtime.detailAbort.abort === "function") runtime.detailAbort.abort();
   if (runtime.events && typeof runtime.events.abort === "function") runtime.events.abort();
-  if (runtime.debounceTimer !== null) clearTimeout(runtime.debounceTimer);
-  if (runtime.mapResizeTimer !== null) clearTimeout(runtime.mapResizeTimer);
-  if (runtime.focusTimer !== null) clearTimeout(runtime.focusTimer);
+  if (typeof clearTimeout === "function") {
+    if (runtime.debounceTimer !== null) clearTimeout(runtime.debounceTimer);
+    if (runtime.mapResizeTimer !== null) clearTimeout(runtime.mapResizeTimer);
+    if (runtime.focusTimer !== null) clearTimeout(runtime.focusTimer);
+  }
   if (runtime.resizeObserver && typeof runtime.resizeObserver.disconnect === "function") runtime.resizeObserver.disconnect();
   if (runtime.detailDialog) {
     const detailElement = runtime.detailDialog.element || runtime.detailDialog;
@@ -1188,7 +1190,25 @@ function disposeGastroRuntime(state) {
     }
     if (detailElement && typeof detailElement.remove === "function") detailElement.remove();
   }
+  if (runtime.appendedModals && Array.isArray(runtime.appendedModals)) {
+    for (const modal of runtime.appendedModals) {
+      if (modal) {
+        if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
+          try {
+            const inst = window.bootstrap.Modal.getInstance(modal);
+            if (inst && typeof inst.hide === "function") inst.hide();
+          } catch (_) {}
+        }
+        if (typeof modal.remove === "function") modal.remove();
+      }
+    }
+    runtime.appendedModals = [];
+  }
   if (runtime.gallery && typeof runtime.gallery.close === "function") runtime.gallery.close();
+  if (typeof document !== "undefined" && document.getElementById) {
+    const lb = document.getElementById("gf-lightbox");
+    if (lb && typeof lb.remove === "function") lb.remove();
+  }
   if (runtime.map) {
     try {
       if (typeof runtime.map.getCenter === "function") {
@@ -1222,8 +1242,8 @@ function disposeGastroRuntime(state) {
   runtime.fullscreen = false;
   runtime.root = null;
   runtime.cluster = null;
-  state.page.busy = false;
-  state.detail.busy = false;
+  if (state.page) state.page.busy = false;
+  if (state.detail) state.detail.busy = false;
 }
 
 function setGastroFullscreen(root, active) {
@@ -2805,6 +2825,18 @@ function onPageLeave(page) {
     if (root && root.gastroState) disposeGastroRuntime(root.gastroState);
     setGastroFullscreen(root, false);
     if (root && root.classList && root.classList.remove) root.classList.remove("gf-root");
+  }
+  if (document.body && document.body.classList && document.body.classList.remove) {
+    document.body.classList.remove("gf-app-fullscreen");
+    document.body.classList.remove("modal-open");
+  }
+  if (document.querySelectorAll) {
+    const backdrops = document.querySelectorAll(".modal-backdrop, .offcanvas-backdrop");
+    if (backdrops && backdrops.forEach) {
+      backdrops.forEach((el) => {
+        if (el && typeof el.remove === "function") el.remove();
+      });
+    }
   }
 }
 
