@@ -361,8 +361,20 @@ WHERE {${geoFilter}
   OPTIONAL { ?s schema:url ?webVal }
   OPTIONAL { ?s schema:servesCuisine ?cuisineVal }
   OPTIONAL {
-    ?s schema:image ?imgObj .
-    ?imgObj schema:contentUrl ?imgUrl .
+    {
+      ?s schema:image ?imgObj .
+      ?imgObj schema:contentUrl ?imgUrl .
+    } UNION {
+      ?s schema:image ?imgDirect .
+      FILTER(isIRI(?imgDirect))
+      BIND(STR(?imgDirect) AS ?imgUrl)
+    } UNION {
+      ?s schema:photo ?photoObj .
+      ?photoObj schema:contentUrl ?imgUrl .
+    } UNION {
+      ?s schema:thumbnailUrl ?thumbUrl .
+      BIND(STR(?thumbUrl) AS ?imgUrl)
+    }
   }
 }
 GROUP BY ?s

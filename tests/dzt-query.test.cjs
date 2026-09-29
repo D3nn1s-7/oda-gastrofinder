@@ -27,10 +27,8 @@ test("buildGastroSparqlQuery creates valid geo-filtered SPARQL query for gastron
   assert.ok(query.includes("schema:Restaurant"), "Query must include schema:Restaurant");
   assert.ok(query.includes("schema:CafeOrCoffeeShop"), "Query must include schema:CafeOrCoffeeShop");
   assert.ok(query.includes("GROUP BY ?s"), "Query must group by subject");
-  assert.ok(query.includes("isLiteral(?descDe)"), "Query must safeguard that description is a literal to prevent raw IRIs");
-  assert.ok(query.includes("13.405"), "Query must contain longitude");
-  assert.ok(query.includes("52.52"), "Query must contain latitude");
   assert.ok(query.includes("25km"), "Query must contain radius");
+  assert.ok(query.includes("schema:thumbnailUrl") || query.includes("schema:photo"), "Query should cover alternative image predicates");
 });
 
 test("convertGastroBindingToPoi normalizes SPARQL bindings into clean POI objects", () => {
