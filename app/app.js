@@ -2831,7 +2831,7 @@ function initGastroMap(root, state) {
   }
 }
 
-function updateGastroMap(root, state, view = null) {
+function updateGastroMarkers(root, state, view = null) {
   if (!state || !state.runtime || !state.runtime.map || typeof window === "undefined" || !window.L) return;
   const L = window.L;
   const current = view || deriveGastroView(state);
@@ -2841,6 +2841,29 @@ function updateGastroMap(root, state, view = null) {
   const markers = new Map();
   for (const poi of current.pois) {
     const selected = poi.id === state.selectedId;
+    const firstImage = (poi.images && poi.images[0]) || null;
+    const imgUrl = poi.imageUrl || (firstImage && (firstImage.url || firstImage["schema:contentUrl"])) || "";
+    const distance = Number.isFinite(Number(poi.distanceKm))
+      ? `${Number(poi.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km`
+      : (poi.distanceKm != null ? `${poi.distanceKm} km` : "");
+    const typeLabels = gastroTypeLabels(poi);
+    const cuisine = Array.isArray(poi.cuisines) ? poi.cuisines.join(", ") : (poi.cuisines || "");
+
+    const popupHtml = `
+      <div class="gf-map-popup" style="min-width: 210px; max-width: 260px;">
+        ${imgUrl ? `<img src="${escapeHtml(imgUrl)}" style="width:100%; height:90px; object-fit:cover; border-radius:6px; margin-bottom:8px;" alt="${escapeHtml(poi.name || '')}">` : ""}
+        <h6 class="fw-bold mb-1" style="font-size:0.92rem; color:var(--gf-forest-dark);">${escapeHtml(poi.name || 'Gastrobetrieb')}</h6>
+        <div class="text-muted small mb-2">${escapeHtml(poi.city || '')} ${distance ? `&bull; <strong>${escapeHtml(distance)}</strong>` : ''}</div>
+        <div class="d-flex flex-wrap gap-1 mb-2">
+          ${typeLabels.map((lbl) => `<span class="badge gf-badge${lbl === 'Café' ? ' gf-badge-cafe' : ''}" style="font-size:0.68rem;">${escapeHtml(lbl)}</span>`).join('')}
+          ${cuisine ? `<span class="badge gf-badge gf-badge-cuisine" style="font-size:0.68rem;">${escapeHtml(cuisine)}</span>` : ''}
+        </div>
+        <button type="button" class="btn btn-sm gf-btn-forest w-100 py-1" data-gf-popup-detail="${escapeHtml(poi.id)}">
+          Details ansehen &raquo;
+        </button>
+      </div>
+    `;
+
     const marker = L.marker([poi.lat, poi.lng], {
       riseOnHover: true,
       icon: L.divIcon({
@@ -2848,15 +2871,26 @@ function updateGastroMap(root, state, view = null) {
         html: gastroMarkerHtml(poi, selected),
         iconSize: [38, 38],
         iconAnchor: [19, 19],
+        popupAnchor: [0, -19],
       }),
       keyboard: true,
       title: poi.name || "Gastrofinder-Betrieb",
     });
-    marker.bindTooltip(escapeHtml(poi.name || "Name nicht angegeben"));
-    marker.on("click", () => {
-      state.runtime.detailOpener = null;
-      selectGastroPoi(state, poi.id, () => updateGastroView(root, state));
+
+    marker.bindPopup(popupHtml, { minWidth: 210, maxWidth: 280, className: "gf-leaflet-popup" });
+    marker.on("popupopen", (e) => {
+      const popupEl = e && e.popup && typeof e.popup.getElement === "function" ? e.popup.getElement() : null;
+      if (popupEl) {
+        const btn = popupEl.querySelector(`[data-gf-popup-detail]`);
+        if (btn) {
+          btn.addEventListener("click", () => {
+            if (typeof marker.closePopup === "function") marker.closePopup();
+            openDetailModal(state, poi.id);
+          });
+        }
+      }
     });
+
     layer.addLayer(marker);
     markers.set(poi.id, marker);
   }
@@ -2869,6 +2903,10 @@ function updateGastroMap(root, state, view = null) {
     }
   }
   state.runtime.lastSelectedId = state.selectedId;
+}
+
+function updateGastroMap(root, state, view = null) {
+  return updateGastroMarkers(root, state, view);
 }
 
 function invalidateGastroMapSize(state) {

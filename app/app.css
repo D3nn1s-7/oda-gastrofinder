@@ -971,6 +971,35 @@ body.gf-app-fullscreen #main-content {
   box-shadow: 0 .25rem .6rem rgba(32, 53, 42, .2);
 }
 
+/* Leaflet Popup Styling */
+.gf-leaflet-popup {
+  color: var(--gf-ink);
+  background: var(--gf-surface);
+}
+
+.gf-leaflet-popup .leaflet-popup-content-wrapper {
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-line);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(29, 51, 40, 0.15);
+  padding: 4px;
+}
+
+.gf-leaflet-popup .leaflet-popup-content {
+  margin: 8px 10px 10px;
+  line-height: 1.4;
+}
+
+.gf-leaflet-popup .leaflet-popup-tip {
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-line);
+  box-shadow: none;
+}
+
+.gf-map-popup img {
+  border: 1px solid var(--gf-line);
+}
+
 .leaflet-control-zoom {
   margin-right: 1rem !important;
   margin-bottom: 5.2rem !important;
