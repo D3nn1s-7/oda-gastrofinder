@@ -2599,6 +2599,35 @@ function initGastroMap(root, state) {
       savedPosition ? [savedPosition.lat, savedPosition.lng] : [state.region.lat, state.region.lng],
       savedPosition && Number.isFinite(savedPosition.zoom) ? savedPosition.zoom : 12,
     );
+    if (L.Control && typeof L.Control.extend === "function") {
+      const HomeControl = L.Control.extend({
+        options: { position: "bottomright" },
+        onAdd: function() {
+          const container = (L.DomUtil && typeof L.DomUtil.create === "function")
+            ? L.DomUtil.create("div", "gf-home-control-bar leaflet-bar")
+            : document.createElement("div");
+          const btn = (L.DomUtil && typeof L.DomUtil.create === "function")
+            ? L.DomUtil.create("button", "gf-map-home-btn", container)
+            : document.createElement("button");
+          btn.type = "button";
+          btn.innerHTML = gastroIcon("home");
+          btn.title = `Ausgangsansicht (${escapeHtml(state.region ? state.region.ort : "")}) wiederherstellen`;
+          btn.setAttribute("aria-label", "Karte auf Ausgangsansicht zurücksetzen");
+          if (L.DomEvent) {
+            if (typeof L.DomEvent.disableClickPropagation === "function") L.DomEvent.disableClickPropagation(btn);
+            if (typeof L.DomEvent.disableScrollPropagation === "function") L.DomEvent.disableScrollPropagation(btn);
+          }
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (typeof map.flyTo === "function" && state.region) map.flyTo([state.region.lat, state.region.lng], 12, { duration: 0.8 });
+            if (typeof map.closePopup === "function") map.closePopup();
+          });
+          return container;
+        }
+      });
+      new HomeControl().addTo(map);
+    }
+
     if (L.control && typeof L.control.zoom === "function") {
       L.control.zoom({ position: "bottomright" }).addTo(map);
     }
@@ -2620,7 +2649,7 @@ function initGastroMap(root, state) {
       fillOpacity: 0.08,
     }).addTo(map);
     const controls = root.querySelector('[data-gf="map-controls"]');
-    if (controls && typeof document !== "undefined" && document.createElement) {
+    if (controls && (!L.Control || typeof L.Control.extend !== "function") && typeof document !== "undefined" && document.createElement) {
       const homeButton = document.createElement("button");
       homeButton.type = "button";
       homeButton.className = "gf-home-button";
