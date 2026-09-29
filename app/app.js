@@ -1800,6 +1800,7 @@ function updateGastroView(root, state) {
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
     const limit = state.view === "catalog" ? state.visible.catalog : state.visible.list;
+    const visible = view.pois.slice(0, limit);
     if (visible.length) {
       list.innerHTML = visible.map((poi) => renderGastroCard(poi, state.runtime.uid, poi.id === state.selectedId)).join("");
     } else if (state.page.busy) {
