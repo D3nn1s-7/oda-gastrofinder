@@ -1585,6 +1585,9 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
           <div id="gf-${uid}-collapse-raw" class="accordion-collapse collapse" data-bs-parent="#gf-${uid}-accordion-raw">
             <div class="accordion-body p-2">
               <pre class="p-2 mb-2 bg-white rounded border small" style="max-height: 200px; overflow-y: auto;"><code>${escapeHtml(JSON.stringify(item.raw || {}, null, 2))}</code></pre>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-1" id="gf-${uid}-copy-raw-btn">
+                In Zwischenablage kopieren
+              </button>
             </div>
           </div>
         </div>
@@ -1725,6 +1728,7 @@ function renderGastroShell(root, state) {
     document.body.appendChild(detailModal);
     if (!state.runtime.appendedModals) state.runtime.appendedModals = [];
     state.runtime.appendedModals.push(detailModal);
+    setupDetailModalListeners(detailModal, state, () => updateGastroView(root, state));
   }
 }
 
@@ -1945,6 +1949,55 @@ function updateGastroDetailDialog(root, state) {
   return true;
 }
 
+function setupDetailModalListeners(modalEl, state, notify = () => {}) {
+  if (!modalEl || typeof modalEl.addEventListener !== "function") return;
+  if (modalEl.__gfDetailListenersSet) return;
+  modalEl.__gfDetailListenersSet = true;
+  modalEl.addEventListener("hidden.bs.modal", () => {
+    if (!state.runtime || !state.runtime.navigatingToMap) {
+      state.selectedId = null;
+    }
+    if (state.runtime) state.runtime.navigatingToMap = false;
+    notify();
+  });
+}
+
+function focusPoiOnMap(state, poiId) {
+  if (!state) return;
+  const id = typeof poiId === "string" ? poiId : (poiId && poiId.id);
+  if (!id) return;
+  const poi = (state.byId && state.byId.get ? state.byId.get(id) : null)
+    || (state.pois || []).find((p) => p.id === id)
+    || (state.allPois || []).find((p) => p.id === id);
+  if (!poi) return;
+  if (state.runtime) {
+    if (state.runtime.catalogOpen && state.runtime.root) {
+      closeGastroCatalog(state.runtime.root, state);
+    }
+    if (state.runtime.mobileView === "list" && state.runtime.root) {
+      setGastroMobileView(state.runtime.root, state, "map");
+    }
+    if (state.runtime.cockpitCollapsed && typeof state.setCockpitState === "function") {
+      state.setCockpitState(false);
+    }
+    state.selectedId = id;
+    if (state.runtime.root) updateGastroView(state.runtime.root, state);
+    const marker = state.runtime.markerById ? state.runtime.markerById.get(id) : null;
+    if (marker && state.runtime.markerLayer && typeof state.runtime.markerLayer.zoomToShowLayer === "function") {
+      state.runtime.markerLayer.zoomToShowLayer(marker, () => {
+        if (typeof marker.openPopup === "function") marker.openPopup();
+      });
+    } else if (state.runtime.map && poi.lat && poi.lng) {
+      const zoom = state.runtime.map.getZoom ? state.runtime.map.getZoom() : 14;
+      state.runtime.map.setView([poi.lat, poi.lng], Math.max(zoom, 15));
+      if (marker && typeof marker.openPopup === "function") marker.openPopup();
+    }
+  } else if (state.map && poi.lat && poi.lng) {
+    const zoom = state.map.getZoom ? state.map.getZoom() : 14;
+    state.map.setView([poi.lat, poi.lng], Math.max(zoom, 15));
+  }
+}
+
 function openDetailModal(state, poiId) {
   if (!state) return;
   const targetId = typeof poiId === "string" ? poiId : (poiId && poiId.id ? poiId.id : state.selectedId);
@@ -1980,6 +2033,12 @@ function openDetailModal(state, poiId) {
     }
   }
 
+  if (modalEl) {
+    setupDetailModalListeners(modalEl, state, () => {
+      if (state.runtime && state.runtime.root) updateGastroView(state.runtime.root, state);
+    });
+  }
+
   let modalContent = (modalEl && modalEl.querySelector && (modalEl.querySelector(`#gf-${uid}-detail-modal-content`) || modalEl.querySelector(".modal-content"))) || modalEl;
   if (modalContent) {
     modalContent.innerHTML = renderGastroHeroDetails(poi, uid, "ready");
@@ -1987,19 +2046,28 @@ function openDetailModal(state, poiId) {
     const showOnMapBtn = modalContent.querySelector && modalContent.querySelector("[data-gf-show-on-map]");
     if (showOnMapBtn && typeof showOnMapBtn.addEventListener === "function") {
       showOnMapBtn.addEventListener("click", () => {
+        if (state.runtime) state.runtime.navigatingToMap = true;
         if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal && modalEl) {
           const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
           modal.hide();
         }
-        if (state.runtime && state.runtime.catalogOpen) {
-          closeGastroCatalog(state.runtime.root || (typeof document !== "undefined" && document.querySelector(".gf-root")), state);
-        }
-        if (state.map && poi.lat && poi.lng) {
-          state.map.setView([poi.lat, poi.lng], Math.max(state.map.getZoom(), 15));
-          if (state.runtime && state.runtime.markerById) {
-            const m = state.runtime.markerById.get(poi.id);
-            if (m && typeof m.openPopup === "function") m.openPopup();
-          }
+        focusPoiOnMap(state, poi.id);
+      });
+    }
+
+    const copyRawBtn = modalContent.querySelector && modalContent.querySelector(`#gf-${uid}-copy-raw-btn`);
+    if (copyRawBtn && typeof copyRawBtn.addEventListener === "function") {
+      copyRawBtn.addEventListener("click", () => {
+        const rawJson = JSON.stringify(poi.raw || {}, null, 2);
+        const originalText = copyRawBtn.textContent;
+        const finish = () => {
+          copyRawBtn.textContent = "Kopiert! ✓";
+          setTimeout(() => { copyRawBtn.textContent = originalText; }, 2000);
+        };
+        if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(rawJson).then(finish).catch(finish);
+        } else {
+          finish();
         }
       });
     }
@@ -2531,8 +2599,7 @@ function bindGastroShellEvents(root, state) {
       event.preventDefault();
       closeGastroCatalog(root, state);
       state.runtime.detailOpener = null;
-      selectGastroPoi(state, id, () => updateGastroView(root, state));
-      updateGastroView(root, state);
+      focusPoiOnMap(state, id);
       return;
     }
     if ((target.hasAttribute("data-gf-select") || target.hasAttribute("data-gf-catalog-detail")) && target.closest("[data-gf-catalog-card]")) {
@@ -2546,14 +2613,26 @@ function bindGastroShellEvents(root, state) {
   const list = root.querySelector('[data-gf="results-list"]');
   if (list) {
     addGastroListener(list, "click", (event) => {
-      const target = event.target && typeof event.target.closest === "function"
+      const detailBtn = event.target && typeof event.target.closest === "function"
         ? event.target.closest("[data-gf-select]")
         : null;
-      if (!target) return;
-      const id = target.getAttribute("data-gf-id");
-      if (id) {
-        state.runtime.detailOpener = target;
-        selectGastroPoi(state, id, notify);
+      if (detailBtn) {
+        event.stopPropagation();
+        const id = detailBtn.getAttribute("data-gf-id");
+        if (id) {
+          state.runtime.detailOpener = detailBtn;
+          openDetailModal(state, id);
+        }
+        return;
+      }
+      const card = event.target && typeof event.target.closest === "function"
+        ? event.target.closest("[data-gf-card]")
+        : null;
+      if (card) {
+        const id = card.getAttribute("data-gf-id");
+        if (id) {
+          focusPoiOnMap(state, id);
+        }
       }
     }, state);
   }

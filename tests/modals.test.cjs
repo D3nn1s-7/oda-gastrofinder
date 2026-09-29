@@ -81,3 +81,43 @@ test("renderGastroHeroDetails does not output raw IRIs as description", () => {
   assert.ok(html.includes("Route öffnen") || html.includes("maps/dir"), "Must include route button");
   assert.ok(html.includes("tel:03012345") || html.includes("030 12345"), "Must include phone link");
 });
+
+test("renderGastroHeroDetails includes ODTA copy button in raw JSON accordion", () => {
+  const scope = loadGastroScope();
+  const poi = {
+    id: "https://example.org/p1",
+    name: "Café Test",
+    raw: { "@id": "https://example.org/p1", name: "Café Test" }
+  };
+  const html = scope.renderGastroHeroDetails(poi, "test-uid", "ready");
+  assert.ok(html.includes("gf-test-uid-copy-raw-btn") || html.includes("copy-raw-btn"), "Must include copy button in ODTA accordion");
+  assert.ok(html.includes("In Zwischenablage kopieren"), "Button label must be 'In Zwischenablage kopieren'");
+});
+
+test("detail modal dismiss via hidden.bs.modal resets state.selectedId", () => {
+  const scope = loadGastroScope();
+  const state = scope.createGastroState("https://proxy.opendatagermany.io/api/ts/v1/kg/sparql", {
+    lat: 52.52, lng: 13.405, radiusKm: 25, ort: "Berlin"
+  });
+  state.runtime.active = true;
+  state.runtime.uid = "test-uid";
+  state.selectedId = "https://example.org/p1";
+
+  const listeners = {};
+  const mockModalEl = {
+    ...createMockElement("div"),
+    addEventListener: (evt, fn) => {
+      listeners[evt] = fn;
+    },
+    dispatchEvent: (evt) => {
+      if (listeners[evt.type]) listeners[evt.type](evt);
+    }
+  };
+
+  scope.setupDetailModalListeners(mockModalEl, state, () => {});
+  assert.strictEqual(typeof listeners["hidden.bs.modal"], "function", "hidden.bs.modal listener must be registered");
+
+  // Fire hidden.bs.modal
+  listeners["hidden.bs.modal"]();
+  assert.strictEqual(state.selectedId, null, "state.selectedId must be reset to null upon modal hidden");
+});

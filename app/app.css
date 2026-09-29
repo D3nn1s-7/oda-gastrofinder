@@ -710,9 +710,16 @@ body.gf-app-fullscreen #main-content {
   margin-top: .25rem;
   color: var(--gf-forest);
   background: var(--gf-surface);
+  border: 1px solid var(--gf-line);
+  transition: all 0.2s ease;
 }
 
-.gf-card-select[aria-pressed="true"],
+.gf-card-select:hover {
+  color: #fff;
+  background: var(--gf-forest);
+  border-color: var(--gf-forest);
+}
+
 .gf-button-primary {
   color: #fff;
   background: var(--gf-forest);

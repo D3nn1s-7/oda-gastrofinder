@@ -246,3 +246,29 @@ test("ein verspäteter Kartenloader nach Seitenwechsel erzeugt keine Karte", asy
   assert.equal(mapCalls.length, 0);
   assert.equal(root.gastroState.runtime.active, false);
 });
+
+test("focusPoiOnMap centers map, closes catalog, and opens marker popup", () => {
+  const api = loadApp();
+  const state = api.createGastroState(validConfig.apiurls[0].url, REGION);
+  const poi = samplePoi({ id: "https://example.org/test-poi", lat: 52.52, lng: 13.405 });
+  state.byId.set(poi.id, poi);
+  state.runtime.active = true;
+
+  let viewSet = null;
+  let popupOpened = false;
+  state.runtime.map = {
+    setView: (coords, zoom) => { viewSet = { coords, zoom }; },
+    getZoom: () => 14,
+  };
+  state.runtime.markerById = new Map();
+  state.runtime.markerById.set(poi.id, {
+    openPopup: () => { popupOpened = true; },
+  });
+
+  assert.equal(typeof api.focusPoiOnMap, "function", "focusPoiOnMap must be exported");
+  api.focusPoiOnMap(state, poi.id);
+
+  assert.equal(viewSet.coords[0], 52.52);
+  assert.equal(viewSet.coords[1], 13.405);
+  assert.equal(popupOpened, true);
+});
