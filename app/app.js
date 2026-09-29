@@ -1403,10 +1403,10 @@ function renderGastroHours(hours) {
 
 function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
   if (status === "loading") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><div class="spinner-border text-danger" role="status"><span class="visually-hidden">Details werden geladen …</span></div><p class="mt-3 text-muted">Details werden geladen …</p></div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><div class="spinner-border gf-spinner-forest" role="status"><span class="visually-hidden">Details werden geladen …</span></div><p class="mt-3 text-muted">Details werden geladen …</p></div>`;
   }
   if (status === "error") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-danger">Die Detailangaben konnten nicht geladen werden.</p><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-secondary fw-semibold">Die Detailangaben konnten nicht geladen werden.</p><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
   }
 
   const item = poi || {};
@@ -1503,9 +1503,9 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
 
     <div class="gf-detail-dialog-content modal-body p-4" id="${escapeHtml(`${uid}-content`)}">
       <div class="d-flex flex-wrap gap-2 mb-3">
-        ${isRestaurant ? '<span class="badge px-2.5 py-1.5 fs-6 fw-semibold" style="background:#b91c1c; color:#fff;">🍽️ Restaurant</span>' : ""}
-        ${isCafe ? '<span class="badge px-2.5 py-1.5 fs-6 fw-semibold" style="background:#c026d3; color:#fff;">☕ Café & Bar</span>' : ""}
-        <span class="badge bg-light text-dark border px-2.5 py-1.5 fs-6 fw-semibold">🍲 ${escapeHtml(cuisines)}</span>
+        ${isRestaurant ? '<span class="badge gf-badge-restaurant px-2.5 py-1.5 fs-6 fw-semibold">🍽️ Restaurant</span>' : ""}
+        ${isCafe ? '<span class="badge gf-badge-cafe px-2.5 py-1.5 fs-6 fw-semibold">☕ Café & Bar</span>' : ""}
+        <span class="badge gf-badge-cuisine px-2.5 py-1.5 fs-6 fw-semibold">🍲 ${escapeHtml(cuisines)}</span>
       </div>
 
       <div class="mb-4">
@@ -1530,7 +1530,7 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
               ${street ? `<div>${escapeHtml(street)}</div>` : ""}
               ${postalCode || city ? `<div>${escapeHtml(postalCode)} ${escapeHtml(city)}</div>` : ""}
               ${item.region ? `<div>${escapeHtml(item.region)}</div>` : ""}
-              ${distText ? `<div class="mt-2 text-danger fw-semibold">&bull; ${escapeHtml(distText)}</div>` : ""}
+              ${distText ? `<div class="mt-2 gf-dist-text">&bull; ${escapeHtml(distText)}</div>` : ""}
             </div>
           </div>
         </div>
@@ -1542,7 +1542,7 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
             </div>
             <div class="d-flex flex-column gap-2">
               ${hasCoords ? `
-                <a href="${escapeHtml(routeUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                <a href="${escapeHtml(routeUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm gf-btn-outline-forest w-100 d-inline-flex align-items-center justify-content-center gap-1">
                   <span>Google Maps Route öffnen</span> <span>↗</span>
                 </a>
               ` : `<button class="btn btn-sm btn-outline-secondary w-100" disabled>Keine Koordinaten</button>`}
@@ -1592,7 +1592,7 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
     </div>
 
     <div class="modal-footer border-0 bg-light d-flex justify-content-between p-3">
-      <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2 px-3" data-gf-show-on-map>
+      <button type="button" class="btn gf-btn-forest d-inline-flex align-items-center gap-2 px-3" data-gf-show-on-map>
         <span>Auf Karte anzeigen</span>
       </button>
       <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Schließen</button>
@@ -2138,7 +2138,7 @@ async function openQrModal(state) {
       ${svgHtml || '<div class="text-danger small">QR-Code konnte nicht geladen werden</div>'}
     </div>
     <div class="d-flex flex-column gap-2 mt-1">
-      <button class="btn btn-danger rounded-pill py-2 px-3 fw-semibold d-inline-flex align-items-center justify-content-center gap-2" id="gf-qr-copy-btn">
+      <button class="btn gf-btn-forest rounded-pill py-2 px-3 fw-semibold d-inline-flex align-items-center justify-content-center gap-2" id="gf-qr-copy-btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>

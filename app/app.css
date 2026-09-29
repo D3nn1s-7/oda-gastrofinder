@@ -2143,8 +2143,8 @@ body:not(.gf-app-fullscreen) > footer {
 
 .gf-detail-close-btn-inline:focus,
 .gf-detail-close-btn-inline:focus-visible {
-  box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.25) !important;
-  border-color: #e65100 !important;
+  box-shadow: 0 0 0 3px rgba(40, 84, 61, 0.25) !important;
+  border-color: var(--gf-forest) !important;
 }
 
 .gf-detail-hero-caption {
@@ -2508,4 +2508,65 @@ body:not(.gf-app-fullscreen) > footer {
   width: 18px;
   height: 18px;
 }
+
+/* ==========================================================================
+   Gourmet Color Accents & Badges
+   ========================================================================== */
+
+.gf-badge-restaurant {
+  background: var(--gf-forest) !important;
+  color: #ffffff !important;
+}
+
+.gf-badge-cafe {
+  background: var(--gf-copper) !important;
+  color: #ffffff !important;
+}
+
+.gf-badge-cuisine {
+  background: #fdf8ed !important;
+  color: var(--gf-ink) !important;
+  border: 1px solid var(--gf-line) !important;
+}
+
+.gf-dist-text {
+  color: var(--gf-forest) !important;
+  font-weight: 600;
+}
+
+.gf-btn-forest {
+  background: linear-gradient(135deg, #326b4e, var(--gf-forest-dark)) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  box-shadow: 0 4px 14px rgba(40, 84, 61, 0.25) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.gf-btn-forest:hover {
+  background: linear-gradient(135deg, #3d805e, #1e4132) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(40, 84, 61, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.gf-btn-forest:active {
+  transform: translateY(0);
+}
+
+.gf-btn-outline-forest {
+  color: var(--gf-forest) !important;
+  border: 1px solid var(--gf-forest) !important;
+  background: transparent !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.gf-btn-outline-forest:hover {
+  background: var(--gf-forest) !important;
+  color: #ffffff !important;
+}
+
+.gf-spinner-forest {
+  color: var(--gf-forest) !important;
+}
+
 
