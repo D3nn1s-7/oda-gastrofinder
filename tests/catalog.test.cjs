@@ -86,6 +86,10 @@ test("renderGastroCatalog renders dual actions ('Auf Karte' and 'Details') for e
   assert.ok(html.includes("data-gf-catalog-card"), "Must render catalog card container");
   assert.ok(html.includes("data-gf-catalog-map"), "Must include 'Auf Karte' action");
   assert.ok(html.includes("data-gf-catalog-detail"), "Must include 'Details' action");
+  assert.ok(html.includes("gf-btn-outline-forest"), "Must use gf-btn-outline-forest for map action");
+  assert.ok(html.includes("gf-btn-forest"), "Must use gf-btn-forest for detail action");
+  assert.ok(!html.includes("btn-outline-primary"), "Must not use Bootstrap btn-outline-primary");
+  assert.ok(!html.includes("btn-primary"), "Must not use Bootstrap btn-primary");
   assert.ok(html.includes("gf-catalog-img") || html.includes("gf-catalog-thumb"), "Must include catalog image container");
   assert.ok(html.includes("Gasthaus Zur Linde"), "Must render POI name");
 });

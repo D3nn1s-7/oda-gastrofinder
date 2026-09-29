@@ -1055,25 +1055,26 @@ body.gf-app-fullscreen #main-content {
 
 .gf-catalog-card {
   min-width: 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-line);
   border-radius: 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 4px 14px rgba(29, 51, 40, 0.06);
 }
 
 .gf-catalog-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  border-color: var(--gf-forest);
+  box-shadow: 0 10px 24px rgba(29, 51, 40, 0.12);
 }
 
 .gf-catalog-img-wrap {
   position: relative;
   height: 180px;
-  background: #f1f5f9;
+  background: var(--gf-surface-subtle);
 }
 
 .gf-catalog-img {
@@ -1088,22 +1089,24 @@ body.gf-app-fullscreen #main-content {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--gf-surface-subtle);
   font-size: 2.5rem;
-  color: #94a3b8;
+  color: var(--gf-muted);
 }
 
 .gf-catalog-dist-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(29, 77, 56, 0.88);
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .gf-catalog-body {
@@ -1116,18 +1119,18 @@ body.gf-app-fullscreen #main-content {
 .gf-catalog-card-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--gf-forest-dark);
   margin-bottom: 4px;
 }
 
 .gf-catalog-meta {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--gf-muted);
 }
 
 .gf-catalog-card-desc {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--gf-muted-strong);
   margin-bottom: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 3;

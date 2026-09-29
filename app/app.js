@@ -2397,10 +2397,10 @@ function renderGastroCatalogCard(poi, uid = "gf-catalog", selected = false) {
         ${cuisine ? `<span class="gf-badge gf-badge-cuisine">${escapeHtml(cuisine)}</span>` : ""}
       </div>
       <div class="gf-catalog-actions">
-        <button type="button" class="btn btn-sm btn-outline-primary gf-catalog-map-action" data-gf-catalog-map data-gf-id="${escapeHtml(item.id || "")}">
+        <button type="button" class="btn btn-sm gf-btn-outline-forest gf-catalog-map-action" data-gf-catalog-map data-gf-id="${escapeHtml(item.id || "")}">
           ${gastroIcon("map")} <span>Auf Karte</span>
         </button>
-        <button type="button" class="btn btn-sm btn-primary gf-catalog-detail-action" data-gf-catalog-detail data-gf-select data-gf-id="${escapeHtml(item.id || "")}">
+        <button type="button" class="btn btn-sm gf-btn-forest gf-catalog-detail-action" data-gf-catalog-detail data-gf-select data-gf-id="${escapeHtml(item.id || "")}">
           <span>Details »</span>
         </button>
       </div>

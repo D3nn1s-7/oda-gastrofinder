@@ -57,3 +57,25 @@ test("Color Harmony: app.css contains no orange focus #e65100 and defines gourme
   assert.ok(css.includes(".gf-btn-forest"), "app.css must define .gf-btn-forest");
   assert.ok(css.includes(".gf-btn-outline-forest"), "app.css must define .gf-btn-outline-forest");
 });
+
+test("Color Harmony: catalog view uses gourmet palette without Bootstrap blue or slate outliers", () => {
+  const jsCode = fs.readFileSync(appJsPath, "utf8");
+  const fnMatch = jsCode.match(/function renderGastroCatalogCard\([\s\S]*?\n\}/);
+  assert.ok(fnMatch, "renderGastroCatalogCard must be defined");
+  const fnBody = fnMatch[0];
+
+  assert.ok(!fnBody.includes("btn-outline-primary"), "Catalog card must not use btn-outline-primary");
+  assert.ok(!fnBody.includes("btn-primary"), "Catalog card must not use btn-primary");
+  assert.ok(fnBody.includes("gf-btn-outline-forest"), "Catalog card map action must use gf-btn-outline-forest");
+  assert.ok(fnBody.includes("gf-btn-forest"), "Catalog card detail action must use gf-btn-forest");
+
+  const css = fs.readFileSync(appCssPath, "utf8");
+  const catalogCardSection = css.match(/\.gf-catalog-card\s*\{[\s\S]*?\}/);
+  assert.ok(catalogCardSection, ".gf-catalog-card CSS rule must exist");
+  assert.ok(!catalogCardSection[0].includes("#e2e8f0"), ".gf-catalog-card must not use #e2e8f0");
+  assert.ok(catalogCardSection[0].includes("var(--gf-line)"), ".gf-catalog-card must use var(--gf-line)");
+
+  const catalogBadgeSection = css.match(/\.gf-catalog-dist-badge\s*\{[\s\S]*?\}/);
+  assert.ok(catalogBadgeSection, ".gf-catalog-dist-badge CSS rule must exist");
+  assert.ok(!catalogBadgeSection[0].includes("rgba(15, 23, 42"), ".gf-catalog-dist-badge must not use slate rgba(15, 23, 42)");
+});
