@@ -1599,6 +1599,7 @@ function renderGastroShell(root, state) {
   if (root.classList && root.classList.add) root.classList.add("gf-root");
   const regionName = state.region ? state.region.ort : "Suchgebiet wird geladen";
   const radius = state.region ? `${state.region.radiusKm} km Umkreis` : "Umkreis wird geladen";
+  const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
   root.innerHTML = `<section class="gf-fullscreen-wrapper gf-shell" aria-label="Gastrofinder im Suchgebiet">
     <div class="gf-map-layer">
       <div class="gf-map-canvas" data-gf="map" aria-label="Karte der geladenen Gastro-Betriebe">
@@ -1607,9 +1608,12 @@ function renderGastroShell(root, state) {
       </div>
     </div>
     <div class="gf-brandbar" data-gf-brandbar>
-      <strong>Gastrofinder</strong>
-      <span>Genussatlas · ${escapeHtml(regionName)}</span>
-      <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      <img src="assets/odas-app-icon.svg" class="gf-brandbar-logo" alt="Logo" onerror="this.src='favicon.png'">
+      <div class="gf-brandbar-text">
+        <strong>${escapeHtml(appTitle)}</strong>
+        <span>Genussatlas · ${escapeHtml(regionName)}</span>
+        <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      </div>
     </div>
     <div class="gf-floating-actions" data-gf-floating-actions aria-label="Kartenaktionen">
       <button type="button" class="gf-floating-button gf-floating-primary" data-gf-catalog-toggle data-gf-control="catalog">${gastroIcon("grid")}<span>Katalog</span></button>
@@ -1618,7 +1622,13 @@ function renderGastroShell(root, state) {
     </div>
     <aside id="gf-${uid}-cockpit" class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
       <div class="gf-cockpit-header">
-        <div class="gf-cockpit-brand"><span class="gf-cockpit-mark">${gastroIcon("fork")}</span><div><strong>Gastrofinder</strong><span>Genussatlas</span></div></div>
+        <div class="gf-cockpit-brand">
+          <img src="assets/odas-app-icon.svg" class="gf-cockpit-logo" alt="Logo" onerror="this.src='favicon.png'">
+          <div class="gf-cockpit-title-wrap">
+            <strong class="gf-cockpit-title">${escapeHtml(appTitle)}</strong>
+            <span class="gf-cockpit-subtitle">${escapeHtml(regionName)} · ${escapeHtml(radius)}</span>
+          </div>
+        </div>
         <button type="button" class="gf-cockpit-toggle" data-gf-cockpit-toggle data-gf-control="cockpit" aria-expanded="true" aria-label="Cockpit einklappen">${gastroIcon("arrow")}</button>
       </div>
       <div class="gf-cockpit-search">
@@ -1692,10 +1702,23 @@ function updateGastroView(root, state) {
     const radius = `${state.region.radiusKm || 25} km Umkreis`;
     const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
     brandbar.innerHTML = `
-      <strong>${escapeHtml(appTitle)}</strong>
-      <span>Genussatlas · ${escapeHtml(regionName)}</span>
-      <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      <img src="assets/odas-app-icon.svg" class="gf-brandbar-logo" alt="Logo" onerror="this.src='favicon.png'">
+      <div class="gf-brandbar-text">
+        <strong>${escapeHtml(appTitle)}</strong>
+        <span>Genussatlas · ${escapeHtml(regionName)}</span>
+        <small>${escapeHtml(radius)} · vom Portal festgelegt</small>
+      </div>
     `;
+  }
+  const cockpitBrand = root.querySelector('.gf-cockpit-brand');
+  if (cockpitBrand && state.region) {
+    const regionName = state.region.ort || "Region";
+    const radius = `${state.region.radiusKm || 25} km Umkreis`;
+    const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
+    const titleEl = cockpitBrand.querySelector('.gf-cockpit-title');
+    if (titleEl) titleEl.textContent = appTitle;
+    const subtitleEl = cockpitBrand.querySelector('.gf-cockpit-subtitle');
+    if (subtitleEl) subtitleEl.textContent = `${regionName} · ${radius}`;
   }
   const view = deriveGastroView(state);
   const focusedId = typeof document !== "undefined" && document.activeElement && typeof document.activeElement.getAttribute === "function"

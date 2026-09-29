@@ -198,13 +198,13 @@ body.gf-app-fullscreen #main-content {
   top: 18px;
   left: 50%;
   z-index: 1000;
-  display: grid;
-  gap: .08rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
   min-width: 15rem;
-  max-width: min(32rem, calc(100vw - 34rem));
-  padding: .65rem 1.15rem .7rem;
+  max-width: min(34rem, calc(100vw - 34rem));
+  padding: .55rem 1.15rem .6rem;
   overflow: hidden;
-  text-align: center;
   background: var(--gf-surface-glass);
   border: 1px solid rgba(255, 255, 255, .84);
   border-radius: 1rem;
@@ -212,6 +212,22 @@ body.gf-app-fullscreen #main-content {
   transform: translateX(-50%);
   backdrop-filter: blur(16px) saturate(125%);
   -webkit-backdrop-filter: blur(16px) saturate(125%);
+}
+
+.gf-brandbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex: 0 0 auto;
+  box-shadow: 0 2px 6px rgba(25, 54, 41, 0.2);
+  object-fit: cover;
+}
+
+.gf-brandbar-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
 }
 
 .gf-brandbar strong {
@@ -335,7 +351,22 @@ body.gf-app-fullscreen #main-content {
 .gf-cockpit-brand {
   display: flex;
   align-items: center;
-  gap: .6rem;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.gf-cockpit-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  flex: 0 0 auto;
+  box-shadow: 0 2px 8px rgba(25, 54, 41, 0.25);
+  object-fit: cover;
+}
+
+.gf-cockpit-title-wrap {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
@@ -351,21 +382,25 @@ body.gf-app-fullscreen #main-content {
 }
 
 .gf-cockpit-brand strong,
-.gf-cockpit-brand span {
+.gf-cockpit-brand span,
+.gf-cockpit-title-wrap strong,
+.gf-cockpit-title-wrap span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.gf-cockpit-brand strong {
+.gf-cockpit-brand strong,
+.gf-cockpit-title-wrap strong {
   color: var(--gf-forest-dark);
   font-family: Fraunces, Georgia, serif;
   font-size: 1.05rem;
   font-weight: 500;
 }
 
-.gf-cockpit-brand span {
+.gf-cockpit-brand span,
+.gf-cockpit-title-wrap span {
   color: var(--gf-muted);
   font-size: .7rem;
 }
