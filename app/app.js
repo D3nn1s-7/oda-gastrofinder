@@ -1279,7 +1279,7 @@ function gastroIcon(name) {
     external: '<path d="M14 3h7v7m0-7L10 14M10 3H3v18h18v-7"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
   };
-  return `<svg class="gf-icon" viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.pin}</svg>`;
+  return `<svg class="gf-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.pin}</svg>`;
 }
 
 function gastroTypeLabels(poi) {
@@ -1300,9 +1300,11 @@ function gastroNoPhoto(label = "Gastrofinder") {
 
 function renderGastroCard(poi, uid = "gf-card", selected = false) {
   const item = poi || {};
-  const imgUrl = item.imageUrl || (item.images && item.images[0] && (item.images[0].url || item.images[0]["schema:contentUrl"])) || "";
+  const firstImage = (item.images && item.images[0]) || null;
+  const imgUrl = item.imageUrl || (firstImage && (firstImage.url || firstImage["schema:contentUrl"])) || "";
+  const imgAlt = (firstImage && firstImage.title) || item.name || "Gastrofinder-Bild";
   const media = imgUrl
-    ? `<img class="gf-card-thumb-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(item.name || "Gastrofinder-Bild")}" loading="lazy">`
+    ? `<img class="gf-card-thumb-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(imgAlt)}" loading="lazy">`
     : `<div class="gf-card-thumb-fallback">${item.isCafe ? "☕" : "🍴"}</div>`;
   const address = item.address || {};
   const locality = item.city || address.locality || address.city || "";
@@ -1367,39 +1369,204 @@ function renderGastroHours(hours) {
   }).join("")}</ul>`;
 }
 
-function renderGastroHeroDetails(poi, uid = "gf-detail", status = "loading") {
+function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
   if (status === "loading") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="gf-detail-dialog-content gf-detail-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Details werden geladen …</div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><div class="spinner-border text-danger" role="status"><span class="visually-hidden">Details werden geladen …</span></div><p class="mt-3 text-muted">Details werden geladen …</p></div>`;
   }
   if (status === "error") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="gf-detail-dialog-content gf-detail-status" role="alert">Die Detailangaben konnten nicht geladen werden. Die Grunddaten bleiben sichtbar.</div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-danger">Die Detailangaben konnten nicht geladen werden.</p><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
   }
+
   const item = poi || {};
+  const name = item.name || "Gastrobetrieb";
+
+  // Clean description: NEVER show raw IRI or onlim entity URIs
+  let desc = item.description || "";
+  if (typeof desc !== "string" || desc.startsWith("http://") || desc.startsWith("https://") || desc.includes("onlim.com/entity")) {
+    desc = "";
+  }
+  if (!desc) {
+    desc = "Für diesen Gastronomiebetrieb liegt im DZT Knowledge Graph keine ausführliche Beschreibung vor.";
+  }
+
+  // Address
   const address = item.address || {};
-  const addressText = [address.street, address.postalCode, address.locality].filter(Boolean).join(", ") || "Adresse nicht angegeben";
-  const cuisine = (item.cuisines || []).length ? item.cuisines.join(", ") : "Küche nicht angegeben";
-  const description = item.description || "Beschreibung nicht angegeben";
-  const source = item.dataLicense || {};
-  const images = (item.images || []).filter(gastroImageIsUsable);
-  const route = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${item.lat},${item.lng}`)}`;
-  const website = safeHttpUrl((item.websites || [])[0]);
-  const telephone = safeTelephone((item.telephones || [])[0]);
-  const hero = images[0]
-    ? `<img class="gf-detail-hero-image" src="${escapeHtml(safeHttpUrl(images[0].url))}" alt="${escapeHtml(images[0].title || item.name || "Gastrofinder-Bild")}">`
-    : gastroNoPhoto(item.name || "Gastrofinder");
-  return `<div class="gf-detail-dialog-content" id="${escapeHtml(`${uid}-content`)}">
-    <div class="gf-detail-hero">${hero}<div class="gf-detail-hero-overlay"></div><button type="button" class="gf-icon-button gf-detail-close" data-gf-close aria-label="Details schließen">${gastroIcon("close")}</button><div class="gf-detail-hero-caption"><p class="gf-eyebrow">${escapeHtml(gastroTypeLabels(item).join(" · "))}</p><h2 id="${escapeHtml(`${uid}-title`)}">${escapeHtml(item.name || "Name nicht angegeben")}</h2><span>${escapeHtml([item.address && item.address.locality, Number.isFinite(Number(item.distanceKm)) ? `${Number(item.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km Luftlinie` : ""].filter(Boolean).join(" · ") || "Ort nicht angegeben")}</span></div></div>
-    <div class="gf-detail-body"><p class="gf-description">${escapeHtml(description)}</p>
-      <dl class="gf-facts"><div><dt>${gastroIcon("clock")}Öffnungszeiten</dt><dd>${renderGastroHours(item.openingHours)}</dd></div><div><dt>${gastroIcon("cup")}Küche</dt><dd>${escapeHtml(cuisine)}</dd></div><div><dt>${gastroIcon("pin")}Adresse</dt><dd>${escapeHtml(addressText)}</dd></div></dl>
-      <div class="gf-detail-actions"><a class="gf-button gf-button-primary" href="${escapeHtml(route)}" target="_blank" rel="noopener noreferrer">${gastroIcon("route")} Route öffnen</a>${telephone ? `<a class="gf-button gf-button-secondary" href="tel:${escapeHtml(telephone.replace(/[^\d+]/g, ""))}">${gastroIcon("phone")} Anrufen</a>` : ""}</div>
-      ${website ? `<a class="gf-text-link" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Website besuchen ${gastroIcon("external")}</a>` : ""}
-      ${images.length > 1 ? `<div class="gf-gallery" aria-label="Weitere Bilder">${images.slice(1).map((image, index) => `<button type="button" class="gf-gallery-item" data-gf-gallery data-gf-image-index="${index + 1}" aria-label="Bild ${index + 2} vergrößern"><img src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || item.name || "Gastrofinder-Bild")}" loading="lazy"><span>${index + 2}/${images.length}</span></button>`).join("")}</div>` : ""}
+  const street = item.street || address.street || "";
+  const postalCode = item.postalCode || address.postalCode || "";
+  const city = item.city || address.locality || "";
+  const addressText = [street, postalCode, city].filter(Boolean).join(", ") || "Adresse nicht angegeben";
+
+  // Contact
+  const phone = item.phone || (item.telephones && item.telephones[0]) || "";
+  const website = item.website || (item.websites && item.websites[0]) || "";
+
+  // Coordinates & Route
+  const lat = item.lat != null ? Number(item.lat) : null;
+  const lng = item.lng != null ? Number(item.lng) : null;
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+  const routeUrl = hasCoords ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}` : "";
+
+  // Images
+  const rawImages = (item.images && item.images.length > 0)
+    ? item.images
+    : (item.imageUrl ? [{ url: item.imageUrl }] : []);
+  const images = rawImages.map((img) => {
+    if (typeof img === "string") return { url: img };
+    return {
+      url: img.url || img["schema:contentUrl"] || img.contentUrl || "",
+      title: img.title || name,
+      copyright: img.copyright || img.author || item.imageCopyright || "DZT",
+      license: img.license || item.imageLicense || ""
+    };
+  }).filter((img) => img.url);
+
+  const heroImage = images[0] ? images[0].url : (item.imageUrl || "");
+
+  // Distance string
+  const distText = (item.distanceKm != null && Number.isFinite(Number(item.distanceKm)))
+    ? `${Number(item.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km entfernt`
+    : "";
+
+  const types = Array.isArray(item.types) ? item.types : [];
+  const isRestaurant = item.isRestaurant || types.some((t) => typeof t === "string" && t.includes("Restaurant"));
+  const isCafe = item.isCafe || types.some((t) => typeof t === "string" && (t.includes("Cafe") || t.includes("CoffeeShop") || t.includes("BarOrPub")));
+  const cuisines = typeof item.cuisines === "string" && item.cuisines.trim()
+    ? item.cuisines
+    : (Array.isArray(item.cuisines) && item.cuisines.length ? item.cuisines.join(", ") : "Küche nicht angegeben");
+
+  const hoursHtml = renderGastroHours(item.openingHours);
+
+  return `
+    ${heroImage ? `
+      <div class="gf-detail-hero-wrap" data-gf-hero-gallery style="cursor: pointer;" title="Tippen für Vollbild-Galerie">
+        <img src="${escapeHtml(heroImage)}" class="gf-detail-hero-img" alt="${escapeHtml(name)}">
+        <div class="gf-detail-hero-gradient"></div>
+        <button type="button" class="btn-close btn-close-white gf-detail-close-btn" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen"></button>
+        <div class="gf-detail-hero-gallery-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          <span>${images.length > 1 ? `1 von ${images.length} Fotos` : "Vollbildansicht"}</span>
+          <span class="gf-gallery-zoom-hint">🔍</span>
+        </div>
+        <div class="gf-detail-hero-caption">
+          <h2 class="gf-detail-hero-title">${escapeHtml(name)}</h2>
+          <div class="gf-detail-hero-subtitle">
+            ${escapeHtml([city, item.region].filter(Boolean).join(" "))}
+            ${distText ? ` &bull; <strong>${escapeHtml(distText)}</strong>` : ""}
+          </div>
+        </div>
+        ${images[0] && (images[0].copyright || images[0].license) ? `
+          <div class="gf-detail-hero-license">
+            Bild: ${escapeHtml(images[0].copyright || "DZT")} ${images[0].license ? `(${escapeHtml(images[0].license)})` : ""}
+          </div>
+        ` : ""}
+      </div>
+    ` : `
+      <div class="modal-header border-0 pb-0">
+        <h3 class="modal-title fw-bold text-truncate pe-3">${escapeHtml(name)}</h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen"></button>
+      </div>
+    `}
+
+    <div class="gf-detail-dialog-content modal-body p-4" id="${escapeHtml(`${uid}-content`)}">
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        ${isRestaurant ? '<span class="badge px-2.5 py-1.5 fs-6 fw-semibold" style="background:#b91c1c; color:#fff;">🍽️ Restaurant</span>' : ""}
+        ${isCafe ? '<span class="badge px-2.5 py-1.5 fs-6 fw-semibold" style="background:#c026d3; color:#fff;">☕ Café & Bar</span>' : ""}
+        <span class="badge bg-light text-dark border px-2.5 py-1.5 fs-6 fw-semibold">🍲 ${escapeHtml(cuisines)}</span>
+      </div>
+
+      <div class="mb-4">
+        <h5 class="fw-bold mb-2">Über diesen Gastronomiebetrieb</h5>
+        <p class="text-secondary fs-6" style="line-height: 1.7;">
+          ${escapeHtml(desc)}
+        </p>
+      </div>
+
+      <div class="mb-4">
+        <h6 class="fw-bold mb-2">Öffnungszeiten</h6>
+        <div class="p-3 bg-light rounded-3 small">
+          ${hoursHtml}
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+          <div class="p-3 bg-light rounded-3 h-100">
+            <h6 class="fw-bold mb-2">Adresse & Lage</h6>
+            <div class="small text-muted">
+              ${street ? `<div>${escapeHtml(street)}</div>` : ""}
+              ${postalCode || city ? `<div>${escapeHtml(postalCode)} ${escapeHtml(city)}</div>` : ""}
+              ${item.region ? `<div>${escapeHtml(item.region)}</div>` : ""}
+              ${distText ? `<div class="mt-2 text-danger fw-semibold">&bull; ${escapeHtml(distText)}</div>` : ""}
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="p-3 bg-light rounded-3 h-100 d-flex flex-column justify-content-between">
+            <div>
+              <h6 class="fw-bold mb-2">Anreise & Kontakt</h6>
+              <p class="small text-muted mb-2">Route oder direkte Kontaktaufnahme:</p>
+            </div>
+            <div class="d-flex flex-column gap-2">
+              ${hasCoords ? `
+                <a href="${escapeHtml(routeUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-danger w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                  <span>Google Maps Route öffnen</span> <span>↗</span>
+                </a>
+              ` : `<button class="btn btn-sm btn-outline-secondary w-100" disabled>Keine Koordinaten</button>`}
+              ${phone ? `
+                <a href="tel:${escapeHtml(phone.replace(/[^\d+]/g, ""))}" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                  <span>📞 Anrufen (${escapeHtml(phone)})</span>
+                </a>
+              ` : ""}
+              ${website ? `
+                <a href="${escapeHtml(safeHttpUrl(website))}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                  <span>🌐 Website besuchen</span> <span>↗</span>
+                </a>
+              ` : ""}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${images.length > 1 ? `
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2">Fotos (${images.length})</h6>
+          <div class="d-flex gap-2 overflow-auto py-1">
+            ${images.map((img, idx) => `
+              <button type="button" class="btn p-0 border-0 rounded overflow-hidden flex-shrink-0" data-gf-gallery-index="${idx}" style="width:72px; height:56px;" title="Foto vergrößern">
+                <img src="${escapeHtml(img.url)}" style="width:100%; height:100%; object-fit:cover;" alt="Foto ${idx + 1}">
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
+
+      <!-- ODTA Rohdaten Akkordeon -->
+      <div class="accordion mb-2" id="gf-${uid}-accordion-raw">
+        <div class="accordion-item border-0 bg-light rounded-3">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-light rounded-3 py-2 px-3 small fw-semibold text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#gf-${uid}-collapse-raw">
+              <span>{ } ODTA / schema.org Rohdaten (JSON-LD)</span>
+            </button>
+          </h2>
+          <div id="gf-${uid}-collapse-raw" class="accordion-collapse collapse" data-bs-parent="#gf-${uid}-accordion-raw">
+            <div class="accordion-body p-2">
+              <pre class="p-2 mb-2 bg-white rounded border small" style="max-height: 200px; overflow-y: auto;"><code>${escapeHtml(JSON.stringify(item.raw || {}, null, 2))}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <footer class="gf-detail-source"><span>DZT Knowledge Graph</span><span>${escapeHtml(source.attribution || "Lizenz: " + (source.url || "nicht angegeben"))}</span></footer>
-  </div>`;
+
+    <div class="modal-footer border-0 bg-light d-flex justify-content-between p-3">
+      <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2 px-3" data-gf-show-on-map>
+        <span>Auf Karte anzeigen</span>
+      </button>
+      <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Schließen</button>
+    </div>
+  `;
 }
 
-function renderGastroDetails(poi, uid = "gf-detail", status = "loading") {
+function renderGastroDetails(poi, uid = "gf-detail", status = "ready") {
   return renderGastroHeroDetails(poi, uid, status);
 }
 
@@ -1424,7 +1591,7 @@ function renderGastroShell(root, state) {
     </div>
     <div class="gf-floating-actions" data-gf-floating-actions aria-label="Kartenaktionen">
       <button type="button" class="gf-floating-button gf-floating-primary" data-gf-catalog-toggle data-gf-control="catalog">${gastroIcon("grid")}<span>Katalog</span></button>
-      <button type="button" class="gf-floating-button" data-gf-share data-gf-control="share">${gastroIcon("share")}<span>Teilen</span></button>
+      <button type="button" class="gf-floating-button" data-gf-share data-gf-control="share" title="Auf dem Smartphone öffnen">${gastroIcon("share")}<span>Handy</span></button>
       <button type="button" class="gf-floating-button gf-floating-icon" data-gf-menu data-gf-control="menu" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Menü öffnen">${gastroIcon("menu")}</button>
     </div>
     <aside id="gf-${uid}-cockpit" class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
@@ -1439,7 +1606,7 @@ function renderGastroShell(root, state) {
       <div class="gf-filter-buttons" role="group" aria-label="Betriebstyp"><button type="button" data-gf-filter="all" aria-pressed="true">Alle <span data-gf-count="all">0</span></button><button type="button" data-gf-filter="restaurant" aria-pressed="false">Restaurants <span data-gf-count="restaurant">0</span></button><button type="button" data-gf-filter="cafe" aria-pressed="false">Cafés <span data-gf-count="cafe">0</span></button></div>
       <div class="gf-selects"><label for="gf-${uid}-cuisine">Küche</label><select id="gf-${uid}-cuisine" data-gf-cuisine><option value="all">Alle Küchen</option><option value="missing">Nicht angegeben</option></select><label for="gf-${uid}-sort">Sortierung</label><select id="gf-${uid}-sort" data-gf-sort><option value="distance">Entfernung</option><option value="name">Name</option></select></div>
       <div class="gf-results-head"><div><p class="gf-eyebrow">Gut essen. Nah entdecken.</p><h1 id="gf-${uid}-results-heading" data-gf="results-heading" tabindex="-1">Ergebnisse im Suchgebiet</h1></div><span class="gf-count" data-gf="count">0 Orte</span></div>
-      <div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list"></div></div>
+      <div class="gf-results-scroll" data-gf="results-scroll"><div class="gf-results-list" data-gf="results-list" data-gf-results-list></div></div>
       <div class="gf-results-footer"><span data-gf="visible-count">0 von 0 Orten</span><button type="button" class="gf-button gf-button-secondary" data-gf-show-more data-gf-control="show-more">Mehr anzeigen</button><button type="button" class="gf-button gf-button-primary" data-gf-load-next data-gf-control="load-next">Weitere Daten laden</button></div>
     </aside>
     <button type="button" class="gf-edge-tab" data-gf-edge-tab data-gf-control="cockpit-edge" aria-controls="gf-${uid}-cockpit" hidden>${gastroIcon("arrow")}<span>Ergebnisse öffnen</span></button>
@@ -1447,7 +1614,18 @@ function renderGastroShell(root, state) {
     <div class="gf-map-controls" data-gf="map-controls" aria-label="Kartensteuerung"></div>
     <p class="gf-status" data-gf="status" role="status" aria-live="polite"></p>
     <div class="gf-legend" aria-label="Kartenlegende"><span>${gastroIcon("fork")} Restaurant</span><span>${gastroIcon("cup")} Café</span><span>${gastroIcon("pin")} Auswahl bleibt erhalten</span></div>
+    <div class="modal fade gf-detail-modal" id="gf-${uid}-detail-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg overflow-hidden" id="gf-${uid}-detail-modal-content"></div>
+      </div>
+    </div>
   </section>`;
+  const detailModal = (root && typeof root.querySelector === "function") ? root.querySelector(`#gf-${uid}-detail-modal`) : null;
+  if (detailModal && typeof document !== "undefined" && document.body && typeof document.body.appendChild === "function") {
+    document.body.appendChild(detailModal);
+    if (!state.runtime.appendedModals) state.runtime.appendedModals = [];
+    state.runtime.appendedModals.push(detailModal);
+  }
 }
 
 function bindGastroImageFallbacks(root) {
@@ -1645,71 +1823,327 @@ function updateGastroDetailDialog(root, state) {
   return true;
 }
 
+function openDetailModal(state, poiId) {
+  if (!state) return;
+  const targetId = typeof poiId === "string" ? poiId : (poiId && poiId.id ? poiId.id : state.selectedId);
+  const poi = (typeof poiId === "object" && poiId !== null && poiId.name)
+    ? poiId
+    : ((state.pois || []).find((p) => p.id === targetId)
+      || (state.allPois || []).find((p) => p.id === targetId)
+      || (state.byId && state.byId.get ? state.byId.get(targetId) : null));
+  if (!poi) return;
+  if (state.runtime) state.selectedId = poi.id;
+
+  const uid = state.runtime ? state.runtime.uid : (state.uid || "gf");
+  let modalEl = (typeof document !== "undefined" && document.getElementById)
+    ? (document.getElementById(`gf-${uid}-detail-modal`) || document.getElementById("gf-detail-modal"))
+    : null;
+  if (!modalEl && typeof document !== "undefined" && document.createElement) {
+    modalEl = document.createElement("div");
+    modalEl.className = "modal fade gf-detail-modal";
+    modalEl.id = `gf-${uid}-detail-modal`;
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg overflow-hidden" id="gf-${uid}-detail-modal-content"></div>
+      </div>
+    `;
+    if (document.body && typeof document.body.appendChild === "function") {
+      document.body.appendChild(modalEl);
+      if (state.runtime) {
+        if (!state.runtime.appendedModals) state.runtime.appendedModals = [];
+        state.runtime.appendedModals.push(modalEl);
+      }
+    }
+  }
+
+  let modalContent = (modalEl && modalEl.querySelector && (modalEl.querySelector(`#gf-${uid}-detail-modal-content`) || modalEl.querySelector(".modal-content"))) || modalEl;
+  if (modalContent) {
+    modalContent.innerHTML = renderGastroHeroDetails(poi, uid, "ready");
+
+    const showOnMapBtn = modalContent.querySelector && modalContent.querySelector("[data-gf-show-on-map]");
+    if (showOnMapBtn && typeof showOnMapBtn.addEventListener === "function") {
+      showOnMapBtn.addEventListener("click", () => {
+        if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal && modalEl) {
+          const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+          modal.hide();
+        }
+        if (state.runtime && state.runtime.catalogOpen) {
+          closeGastroCatalog(state.runtime.root || (typeof document !== "undefined" && document.querySelector(".gf-root")), state);
+        }
+        if (state.map && poi.lat && poi.lng) {
+          state.map.setView([poi.lat, poi.lng], Math.max(state.map.getZoom(), 15));
+          if (state.runtime && state.runtime.markerById) {
+            const m = state.runtime.markerById.get(poi.id);
+            if (m && typeof m.openPopup === "function") m.openPopup();
+          }
+        }
+      });
+    }
+
+    const heroWrap = modalContent.querySelector && modalContent.querySelector("[data-gf-hero-gallery]");
+    if (heroWrap && typeof heroWrap.addEventListener === "function") {
+      heroWrap.addEventListener("click", (e) => {
+        if (e.target && e.target.closest && e.target.closest("[data-bs-dismiss='modal']")) return;
+        openLightbox(poi, 0);
+      });
+    }
+
+    if (modalContent.querySelectorAll) {
+      modalContent.querySelectorAll("[data-gf-gallery-index]").forEach((thumb) => {
+        if (typeof thumb.addEventListener === "function") {
+          thumb.addEventListener("click", () => {
+            const idx = parseInt(thumb.getAttribute("data-gf-gallery-index"), 10) || 0;
+            openLightbox(poi, idx);
+          });
+        }
+      });
+    }
+  }
+
+  if (modalEl && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
+    const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+}
+
+function openLightbox(poi, initialIndex = 0) {
+  if (!poi) return;
+  const rawImages = (poi.images && poi.images.length > 0)
+    ? poi.images
+    : (poi.imageUrl ? [{ url: poi.imageUrl }] : []);
+
+  const images = rawImages.map((img) => {
+    if (typeof img === "string") return { url: img };
+    return {
+      url: img.url || img["schema:contentUrl"] || img.contentUrl || "",
+      copyright: img.copyright || img.author || poi.imageCopyright || "DZT",
+      license: img.license || poi.imageLicense || ""
+    };
+  }).filter((img) => img.url);
+
+  if (images.length === 0 || typeof document === "undefined" || !document.createElement) return;
+
+  let currentIndex = initialIndex;
+  if (currentIndex < 0 || currentIndex >= images.length) currentIndex = 0;
+
+  const existing = document.getElementById("gf-lightbox-overlay");
+  if (existing && typeof existing.remove === "function") existing.remove();
+
+  const lightbox = document.createElement("div");
+  lightbox.id = "gf-lightbox-overlay";
+  lightbox.className = "gf-lightbox-overlay";
+  lightbox.setAttribute("role", "dialog");
+  lightbox.setAttribute("aria-label", "Vollbild Galerie");
+  lightbox.innerHTML = `
+    <div class="gf-lightbox-backdrop"></div>
+    <div class="gf-lightbox-top-bar">
+      <div class="gf-lightbox-counter">${images.length > 1 ? `${currentIndex + 1} / ${images.length}` : ""}</div>
+      <button class="gf-lightbox-close-btn" aria-label="Schließen" title="Schließen (Esc)">✕</button>
+    </div>
+    <div class="gf-lightbox-content">
+      ${images.length > 1 ? `<button class="gf-lightbox-nav-btn gf-lightbox-prev" aria-label="Vorheriges Bild" title="Vorheriges Bild (Pfeiltaste links)">‹</button>` : ""}
+      <div class="gf-lightbox-img-container">
+        <img src="${escapeHtml(images[currentIndex].url)}" class="gf-lightbox-img" alt="${escapeHtml(poi.name || '')}" />
+      </div>
+      ${images.length > 1 ? `<button class="gf-lightbox-nav-btn gf-lightbox-next" aria-label="Nächstes Bild" title="Nächstes Bild (Pfeiltaste rechts)">›</button>` : ""}
+    </div>
+    <div class="gf-lightbox-bottom-bar">
+      <div class="gf-lightbox-title">${escapeHtml(poi.name || '')}</div>
+      <div class="gf-lightbox-caption">
+        ${(images[currentIndex].copyright || images[currentIndex].license) ? `Bild: ${escapeHtml(images[currentIndex].copyright || "DZT")} ${images[currentIndex].license ? `(${escapeHtml(images[currentIndex].license)})` : ""}` : ""}
+      </div>
+    </div>
+  `;
+
+  if (document.body && typeof document.body.appendChild === "function") {
+    document.body.appendChild(lightbox);
+  }
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => lightbox.classList.add("gf-lightbox-open"));
+  } else if (lightbox.classList && lightbox.classList.add) {
+    lightbox.classList.add("gf-lightbox-open");
+  }
+
+  function closeLightbox() {
+    if (lightbox.classList && lightbox.classList.remove) lightbox.classList.remove("gf-lightbox-open");
+    if (typeof document !== "undefined" && typeof document.removeEventListener === "function") {
+      document.removeEventListener("keydown", handleKeydown);
+    }
+    setTimeout(() => {
+      if (lightbox && lightbox.parentNode && typeof lightbox.remove === "function") lightbox.remove();
+    }, 250);
+  }
+
+  function updateImage(idx) {
+    if (idx < 0) idx = images.length - 1;
+    if (idx >= images.length) idx = 0;
+    currentIndex = idx;
+    const imgEl = lightbox.querySelector(".gf-lightbox-img");
+    const counterEl = lightbox.querySelector(".gf-lightbox-counter");
+    const captionEl = lightbox.querySelector(".gf-lightbox-caption");
+    if (imgEl) imgEl.src = images[currentIndex].url;
+    if (counterEl && images.length > 1) counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
+    if (captionEl) {
+      captionEl.textContent = (images[currentIndex].copyright || images[currentIndex].license)
+        ? `Bild: ${images[currentIndex].copyright || "DZT"} ${images[currentIndex].license ? `(${images[currentIndex].license})` : ""}`
+        : "";
+    }
+  }
+
+  function handleKeydown(e) {
+    if (e.key === "Escape") closeLightbox();
+    else if (e.key === "ArrowLeft" && images.length > 1) updateImage(currentIndex - 1);
+    else if (e.key === "ArrowRight" && images.length > 1) updateImage(currentIndex + 1);
+  }
+
+  if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+    document.addEventListener("keydown", handleKeydown);
+  }
+
+  const closeBtn = lightbox.querySelector(".gf-lightbox-close-btn");
+  if (closeBtn && typeof closeBtn.addEventListener === "function") closeBtn.addEventListener("click", closeLightbox);
+  const backdrop = lightbox.querySelector(".gf-lightbox-backdrop");
+  if (backdrop && typeof backdrop.addEventListener === "function") backdrop.addEventListener("click", closeLightbox);
+  const prevBtn = lightbox.querySelector(".gf-lightbox-prev");
+  if (prevBtn && typeof prevBtn.addEventListener === "function") prevBtn.addEventListener("click", () => updateImage(currentIndex - 1));
+  const nextBtn = lightbox.querySelector(".gf-lightbox-next");
+  if (nextBtn && typeof nextBtn.addEventListener === "function") nextBtn.addEventListener("click", () => updateImage(currentIndex + 1));
+}
+
+async function openQrModal(state) {
+  let modalEl = (typeof document !== "undefined" && document.getElementById)
+    ? (document.getElementById("gf-qr-modal") || document.getElementById("sw-qr-modal"))
+    : null;
+  if (!modalEl && typeof document !== "undefined" && document.createElement) {
+    modalEl = document.createElement("div");
+    modalEl.className = "modal fade gf-qr-modal";
+    modalEl.id = "gf-qr-modal";
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg text-center gf-qr-modal-content">
+          <div class="modal-header border-0 pb-0 justify-content-end">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+          </div>
+          <div class="modal-body px-4 pt-1 pb-4" id="gf-qr-modal-body"></div>
+        </div>
+      </div>
+    `;
+    if (document.body && typeof document.body.appendChild === "function") {
+      document.body.appendChild(modalEl);
+      if (state && state.runtime) {
+        if (!state.runtime.appendedModals) state.runtime.appendedModals = [];
+        state.runtime.appendedModals.push(modalEl);
+      }
+    }
+  }
+
+  const modalBody = modalEl && modalEl.querySelector ? modalEl.querySelector("#gf-qr-modal-body") : null;
+  if (!modalBody) return;
+
+  try {
+    await ensureQrCodeLoaded();
+  } catch (err) {
+    console.warn("QR code library load error:", err);
+  }
+
+  const currentUrl = (typeof window !== "undefined" && window.location)
+    ? window.location.href.split("#")[0] + "#startseite"
+    : "";
+
+  let svgHtml = "";
+  if (typeof window !== "undefined" && typeof window.qrcode === "function") {
+    try {
+      const qr = window.qrcode(0, "M");
+      qr.addData(currentUrl);
+      qr.make();
+      svgHtml = qr.createSvgTag({ scalable: true });
+    } catch (e) {
+      console.error("QR generation failed:", e);
+    }
+  }
+
+  modalBody.innerHTML = `
+    <div class="gf-qr-icon-wrap" style="width:48px;height:48px;margin:0 auto 12px;background:#fef2f2;color:#b91c1c;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+      </svg>
+    </div>
+    <h3 class="h5 fw-bold text-dark mt-2 mb-1">Auf Smartphone öffnen</h3>
+    <p class="small text-secondary mb-3" style="line-height: 1.4;">
+      Scanne den QR-Code mit der Smartphone-Kamera, um diesen Gastrofinder direkt mobil aufzurufen.
+    </p>
+    <div class="gf-qr-svg-card mb-3 p-2 bg-white rounded border" style="display:inline-block;max-width:200px;">
+      ${svgHtml || '<div class="text-danger small">QR-Code konnte nicht geladen werden</div>'}
+    </div>
+    <div class="d-flex flex-column gap-2 mt-1">
+      <button class="btn btn-danger rounded-pill py-2 px-3 fw-semibold d-inline-flex align-items-center justify-content-center gap-2" id="gf-qr-copy-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span id="gf-qr-copy-text">Link kopieren</span>
+      </button>
+      <span class="text-muted text-truncate px-2" style="font-size: 0.75rem;" title="${escapeHtml(currentUrl)}">
+        ${escapeHtml(currentUrl)}
+      </span>
+    </div>
+  `;
+
+  const copyBtn = document.getElementById("gf-qr-copy-btn");
+  const copyText = document.getElementById("gf-qr-copy-text");
+  if (copyBtn && copyText && typeof copyBtn.addEventListener === "function") {
+    copyBtn.addEventListener("click", () => {
+      const finish = () => {
+        copyText.textContent = "Kopiert! ✓";
+        setTimeout(() => {
+          const t = document.getElementById("gf-qr-copy-text");
+          if (t) t.textContent = "Link kopieren";
+        }, 2000);
+      };
+      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentUrl).then(finish).catch(finish);
+      } else {
+        finish();
+      }
+    });
+  }
+
+  if (modalEl && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
+    const modalInst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    modalInst.show();
+  }
+}
+
 function openGastroDetailDialog(root, state, opener = null) {
-  const targetRoot = root || (state && state.runtime && state.runtime.root);
-  if (!targetRoot || !state || !state.runtime || typeof document === "undefined" || !document.body || typeof document.createElement !== "function") return false;
-  if (state.runtime.detailDialog) {
-    updateGastroDetailDialog(targetRoot, state);
-    const current = state.runtime.detailDialog.element || state.runtime.detailDialog;
-    if (current && typeof current.showModal === "function" && !current.open) current.showModal();
-    return true;
-  }
-  const dialog = document.createElement("dialog");
-  const uid = state.runtime.uid || createGastroUid();
-  state.runtime.uid = uid;
-  dialog.className = "gf-detail-dialog";
-  dialog.setAttribute("aria-labelledby", `gf-${uid}-title`);
-  dialog.setAttribute("aria-describedby", `gf-${uid}-content`);
-  if (typeof dialog.addEventListener === "function") {
-    dialog.addEventListener("close", () => {
-      if (state.runtime.detailDialog && state.runtime.detailDialog.element === dialog) closeGastroDetailDialog(targetRoot, state, true);
-    });
-    dialog.addEventListener("click", (event) => {
-      const target = event.target && typeof event.target.closest === "function" ? event.target.closest("button") : null;
-      if (!target) return;
-      if (target.hasAttribute("data-gf-close")) closeGastroDetailDialog(targetRoot, state);
-      if (target.hasAttribute("data-gf-gallery")) openGastroGallery(targetRoot, state, target);
-    });
-  }
-  state.runtime.detailDialog = {
-    element: dialog,
-    opener: opener || (document.activeElement || null),
-  };
-  document.body.appendChild(dialog);
-  updateGastroDetailDialog(targetRoot, state);
-  if (typeof dialog.showModal === "function") dialog.showModal();
-  else dialog.setAttribute("open", "");
-  const closeButton = dialog.querySelector && dialog.querySelector("[data-gf-close]");
-  if (closeButton && typeof closeButton.focus === "function") closeButton.focus();
+  if (!state) return false;
+  openDetailModal(state, state.selectedId);
   return true;
 }
 
 function closeGastroDetailDialog(root, state, fromDialogEvent = false) {
   if (!state || !state.runtime) return false;
   const record = state.runtime.detailDialog;
-  if (!record) return false;
-  const element = record.element || record;
-  const opener = record.opener;
-  state.runtime.detailDialog = null;
-  if (state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") state.runtime.detailAbort.abort();
-  state.runtime.detailAbort = null;
-  state.detail.seq += 1;
-  state.detail.busy = false;
-  state.detail.error = null;
-  state.detail.retryAt = 0;
+  if (record) {
+    const element = record.element || record;
+    const opener = record.opener;
+    state.runtime.detailDialog = null;
+    if (!fromDialogEvent && element && typeof element.close === "function") {
+      try { element.close(); } catch (_error) { /* bereits geschlossen */ }
+    }
+    if (opener && typeof opener.focus === "function") opener.focus();
+  }
+  const uid = state.runtime.uid || "gf";
+  const modalEl = typeof document !== "undefined" ? (document.getElementById(`gf-${uid}-detail-modal`) || document.getElementById("gf-detail-modal")) : null;
+  if (modalEl && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
+    const modal = window.bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
   state.selectedId = null;
-  closeGastroGallery(root, state);
-  if (!fromDialogEvent && element && typeof element.close === "function") {
-    try { element.close(); } catch (_error) { /* bereits geschlossen */ }
-  }
-  if (element && typeof element.remove === "function") element.remove();
-  if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus();
-  else if (root && root.querySelector) {
-    const heading = root.querySelector('[data-gf="results-heading"]');
-    if (heading && typeof heading.focus === "function") heading.focus();
-  }
-  if (root && state.runtime.active) updateGastroView(root, state);
-  invalidateGastroMapSize(state);
   return true;
 }
 
@@ -1947,7 +2381,7 @@ function bindGastroShellEvents(root, state) {
   const area = root.querySelector('[data-gf-show-area]');
   if (area) addGastroListener(area, "click", () => showGastroArea(state), state);
   const share = root.querySelector('[data-gf-share]');
-  if (share) addGastroListener(share, "click", () => shareGastroInstance(root), state);
+  if (share) addGastroListener(share, "click", () => openQrModal(state), state);
   if (typeof ResizeObserver === "function") {
     state.runtime.resizeObserver = new ResizeObserver(() => invalidateGastroMapSize(state));
     const mapLayer = root.querySelector(".gf-fullscreen-wrapper");
@@ -1955,15 +2389,24 @@ function bindGastroShellEvents(root, state) {
   }
 }
 
+function resolveGastroAssetUrl(relPath) {
+  if (!relPath || relPath.startsWith("http://") || relPath.startsWith("https://") || relPath.startsWith("/")) {
+    return relPath;
+  }
+  const base = getOdasAppBasePath();
+  return base ? `${base}/${relPath}` : relPath;
+}
+
 function loadGastroStyle(href) {
   if (typeof document === "undefined") return Promise.resolve();
-  const existing = document.querySelector(`link[data-gf-style="${href}"]`);
+  const resolved = resolveGastroAssetUrl(href);
+  const existing = document.querySelector(`link[data-gf-style="${resolved}"]`);
   if (existing) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = href;
-    link.dataset.gfStyle = href;
+    link.href = resolved;
+    link.dataset.gfStyle = resolved;
     link.onload = () => resolve();
     link.onerror = () => reject(new Error("Karten-Asset konnte nicht geladen werden."));
     document.head.appendChild(link);
@@ -1972,16 +2415,23 @@ function loadGastroStyle(href) {
 
 function loadGastroScript(src) {
   if (typeof document === "undefined") return Promise.resolve();
-  const existing = document.querySelector(`script[data-gf-script="${src}"]`);
+  const resolved = resolveGastroAssetUrl(src);
+  const existing = document.querySelector(`script[data-gf-script="${resolved}"]`);
   if (existing) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = src;
-    script.dataset.gfScript = src;
+    script.src = resolved;
+    script.dataset.gfScript = resolved;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Kartenbibliothek konnte nicht geladen werden."));
+    script.onerror = () => reject(new Error("Bibliothek konnte nicht geladen werden."));
     document.head.appendChild(script);
   });
+}
+
+async function ensureQrCodeLoaded() {
+  if (typeof window !== "undefined" && typeof window.qrcode === "function") return;
+  const qrUrl = resolveGastroAssetUrl("vendor/qrcode/qrcode.min.js");
+  await loadGastroScript(qrUrl);
 }
 
 async function ensureGastroMapLibraries() {
