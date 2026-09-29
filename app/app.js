@@ -2471,6 +2471,21 @@ function bindGastroShellEvents(root, state) {
   if (area) addGastroListener(area, "click", () => showGastroArea(state), state);
   const share = root.querySelector('[data-gf-share]');
   if (share) addGastroListener(share, "click", () => openQrModal(state), state);
+  const menuBtn = root.querySelector('[data-gf-control="menu"], [data-gf-menu]');
+  if (menuBtn) {
+    addGastroListener(menuBtn, "click", () => {
+      ensureGlobalOffcanvasSetup();
+      ensureQrNavMenuItem(state);
+      const offcanvasNav = document.getElementById("offcanvasNavbar");
+      if (offcanvasNav && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Offcanvas) {
+        let oc = window.bootstrap.Offcanvas.getInstance(offcanvasNav);
+        if (!oc) {
+          oc = new window.bootstrap.Offcanvas(offcanvasNav);
+        }
+        oc.show();
+      }
+    }, state);
+  }
   if (typeof ResizeObserver === "function") {
     state.runtime.resizeObserver = new ResizeObserver(() => invalidateGastroMapSize(state));
     const mapLayer = root.querySelector(".gf-fullscreen-wrapper");
@@ -2811,6 +2826,8 @@ function renderGastroSecondaryPage(page, content) {
 
 function renderPageOverride(page) {
   if (page === "startseite") return null;
+  ensureGlobalOffcanvasSetup();
+  setTimeout(() => ensureQrNavMenuItem(), 0);
   const info = getGastroSecondaryPageInfo(page);
   if (!info) return null;
   let content = typeof configData !== "undefined" && configData ? configData[page] : "";
@@ -2844,4 +2861,62 @@ function onPageLeave(page) {
 
 function addToHead() {
   // Die Kartenbibliotheken werden bewusst erst nach der ersten sichtbaren Shell geladen.
+}
+
+function ensureGlobalOffcanvasSetup() {
+  if (typeof document === "undefined" || !document.getElementById || !document.body || typeof document.body.appendChild !== "function") return;
+  const offcanvasNav = document.getElementById("offcanvasNavbar");
+  if (offcanvasNav && offcanvasNav.parentElement !== document.body) {
+    document.body.appendChild(offcanvasNav);
+  }
+}
+
+function ensureQrNavMenuItem(state) {
+  if (typeof document === "undefined" || !document.getElementById || typeof document.createElement !== "function") return;
+  const offcanvasNav = document.getElementById("offcanvasNavbar");
+  if (!offcanvasNav) return;
+  const navList = offcanvasNav.querySelector ? offcanvasNav.querySelector(".navbar-nav") : null;
+  if (!navList || (navList.querySelector && navList.querySelector("#gf-qr-nav-item")) || typeof navList.appendChild !== "function") return;
+
+  const qrLi = document.createElement("li");
+  qrLi.className = "nav-item";
+  qrLi.id = "gf-qr-nav-item";
+  qrLi.innerHTML = `
+    <a class="nav-link gf-qr-nav-link" href="#qr-code" role="button">
+      <span class="gf-nav-icon">${gastroIcon("share")}</span>
+      <span>Auf dem Smartphone öffnen</span>
+    </a>
+  `;
+  const link = qrLi.querySelector("a");
+  if (link && typeof link.addEventListener === "function") {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Offcanvas) {
+        const oc = window.bootstrap.Offcanvas.getInstance(offcanvasNav);
+        if (oc) oc.hide();
+      }
+      openQrModal(state || (document.getElementById("main-content") && document.getElementById("main-content").gastroState));
+    });
+  }
+  navList.appendChild(qrLi);
+}
+
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+  const initGlobalMenu = () => {
+    ensureGlobalOffcanvasSetup();
+    ensureQrNavMenuItem();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initGlobalMenu);
+  } else {
+    initGlobalMenu();
+  }
+
+  document.addEventListener("click", (e) => {
+    const toggler = e.target && e.target.closest && e.target.closest('[data-bs-toggle="offcanvas"][data-bs-target="#offcanvasNavbar"], .navbar-toggler, [data-gf-control="menu"], [data-gf-menu]');
+    if (toggler) {
+      ensureGlobalOffcanvasSetup();
+      ensureQrNavMenuItem();
+    }
+  }, true);
 }

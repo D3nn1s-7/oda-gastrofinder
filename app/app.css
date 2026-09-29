@@ -2353,3 +2353,97 @@ body:not(.gf-app-fullscreen) > footer {
   display: block;
   margin: 0 auto;
 }
+
+/* ==========================================================================
+   Offcanvas Burger-Menü Styling
+   ========================================================================== */
+
+#offcanvasNavbar.offcanvas {
+  position: fixed !important;
+  z-index: 1065 !important;
+  background: var(--gf-surface-glass-strong) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-left: 1px solid var(--gf-line) !important;
+  box-shadow: -12px 0 36px rgba(32, 53, 42, 0.16) !important;
+  width: 320px !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#offcanvasNavbar .offcanvas-header {
+  padding: 20px 20px 16px 20px;
+  border-bottom: 1px solid var(--gf-line);
+  background: transparent;
+}
+
+#offcanvasNavbar .offcanvas-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gf-forest-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+#offcanvasNavbar .btn-close {
+  background-color: var(--gf-surface);
+  border-radius: 50%;
+  padding: 8px;
+  opacity: 0.75;
+  transition: all 0.15s ease;
+}
+
+#offcanvasNavbar .btn-close:hover {
+  opacity: 1;
+  background-color: #f0e8db;
+  transform: scale(1.05);
+}
+
+#offcanvasNavbar .offcanvas-body {
+  padding: 16px;
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+}
+
+#offcanvasNavbar .navbar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#offcanvasNavbar .navbar-nav .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--gf-ink);
+  border-radius: 12px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+#offcanvasNavbar .navbar-nav .nav-link:hover {
+  color: var(--gf-copper-dark);
+  background: rgba(166, 107, 50, 0.08);
+  transform: translateX(4px);
+}
+
+#offcanvasNavbar .navbar-nav .nav-link.active {
+  background: linear-gradient(135deg, var(--gf-forest), var(--gf-forest-dark)) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(40, 84, 61, 0.25) !important;
+}
+
+.gf-qr-nav-link .gf-nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
