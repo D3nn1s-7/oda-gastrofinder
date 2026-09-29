@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 - 2026-09-29
+- **FEAT:** Gold-Standard-Angleichung an Referenz-Architektur (oda-sehenswuerdigkeiten).
+- **FIX:** Behebung des übergroßen SVG-Uhr-Icons im Detail-Modal durch globale Icon-Regeln und explizite SVG-Dimensionen.
+- **FEAT:** Bootstrap 5.3 Detail-Modal mit Hero-Foto, Multi-Foto-Strip, bereinigter Beschreibung (keine rohen IRIs) und ODTA-Rohdaten-Akkordeon.
+- **FEAT:** Smartphone QR-Code Modal mit qrcode.js und direkter Teilen-Funktion.
+- **FEAT:** Vollbild-Foto-Katalog mit dualen Aktionen ("Auf Karte" und "Details").
+- **FEAT:** Vollbild-Bilder-Lightbox mit Tastatur- und Wischsteuerung.
+- **FEAT:** Dynamischer Top-Banner mit Ort und Radius, einklappbares Genuss-Cockpit mit kompakten Karten (85×80px Thumbnails).
+- **PERF:** Optimierte DZT-SPARQL-Projektionsabfrage lädt alle Metadaten in einer einzigen Anfrage.
+
 ## 1.1.2 - 2026-09-24
 - **FIX:** Sekundärseiten verursachen auf Desktop keinen horizontalen Overflow durch das offscreen positionierte ODAS-Offcanvas.
 

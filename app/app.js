@@ -1461,7 +1461,9 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
       <div class="gf-detail-hero-wrap" data-gf-hero-gallery style="cursor: pointer;" title="Tippen für Vollbild-Galerie">
         <img src="${escapeHtml(heroImage)}" class="gf-detail-hero-img" alt="${escapeHtml(name)}">
         <div class="gf-detail-hero-gradient"></div>
-        <button type="button" class="btn-close btn-close-white gf-detail-close-btn" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen"></button>
+        <button type="button" class="gf-detail-close-btn" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
         <div class="gf-detail-hero-gallery-badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
           <span>${images.length > 1 ? `1 von ${images.length} Fotos` : "Vollbildansicht"}</span>

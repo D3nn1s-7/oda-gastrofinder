@@ -2053,6 +2053,38 @@ body:not(.gf-app-fullscreen) > footer {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
 }
 
+.gf-detail-close-btn:focus,
+.gf-detail-close-btn:focus-visible {
+  outline: none !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.gf-detail-close-btn:active {
+  transform: scale(0.94) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+}
+
+.gf-detail-close-btn-inline {
+  position: static !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  margin-left: auto;
+}
+
+.gf-detail-close-btn-inline:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.gf-detail-close-btn-inline:focus,
+.gf-detail-close-btn-inline:focus-visible {
+  box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.25) !important;
+  border-color: #e65100 !important;
+}
+
 .gf-detail-hero-caption {
   position: absolute;
   bottom: 20px;
