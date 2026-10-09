@@ -38,6 +38,7 @@ function loadGastroScope() {
   const code = fs.readFileSync(path.join(__dirname, "../app/app.js"), "utf8");
   const sandbox = {
     console,
+    URL,
     window: { location: { hostname: "test.local", pathname: "/view/test/app/inst1/" } },
     document: {
       addEventListener: () => {},
@@ -60,7 +61,11 @@ test("renderGastroCard produces compact card with thumbnail and details link", (
     id: "https://example.org/p1",
     name: "Ristorante Roma",
     description: "Leckere Pasta und Pizza.",
-    imageUrl: "https://example.org/roma.jpg",
+    images: [{
+      url: "https://example.org/roma.jpg",
+      licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+      credit: "Testfotografie",
+    }],
     distanceKm: 1.2,
     city: "Berlin",
     street: "Mittelstraße 5",

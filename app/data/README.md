@@ -13,10 +13,10 @@
 ## Erzeugung und Prüfung
 
 - Quelldatei: `cities1000.zip`
-- Abrufdatum: 2026-09-22
-- SHA-256 der Quelldatei: `56fb681d6daf41f0fad2e8ee3431082399f3b321daea102fcf25c02bfa8bb370`
-- Maximales Änderungsdatum in den ausgewerteten Quellzeilen: 2026-09-23
-- Umfang: 7.650 deutsche Einträge
+- Abrufdatum: 2026-10-08 (erneuter Abruf der offiziellen Quelle)
+- SHA-256 der Quelldatei: `45fe6cd44e4b2228bb9fdfca5fc5841a83dbdc6cfa7b360d37e42366bd117838`
+- Maximales Änderungsdatum in den ausgewerteten Quellzeilen: 2026-10-07
+- Umfang: 7.652 deutsche Einträge
 
 Umgebungsabhängiger Neuaufbau:
 

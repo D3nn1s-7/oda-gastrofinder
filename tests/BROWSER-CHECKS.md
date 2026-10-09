@@ -1,55 +1,58 @@
-# Browser-Prüfungen für den Gastrofinder
+# Reproduzierbare Browserprüfung
 
-Diese Datei dokumentiert die gezielten, lokalen Browserfälle. Die DZT-Antworten werden ausschließlich durch `browser-fixtures.js` ersetzt; eine Fixture ist kein Live-Nachweis.
+Die synthetischen SPARQL-Fixtures sind kein Nachweis des echten DZT-Relays. Sie prüfen die aktuelle Runtime auf beiden Daten- und Bedienpfaden, ohne API-Key im Browser.
 
-## Start
+## Lokaler Start
 
-1. Vom Projektordner `oda-gastrofinder/` aus einen temporären Server auf einer Nicht-Loopback-Adresse starten (beim Testziel `odas-dev.invalid`).
-2. `http://odas-dev.invalid:<port>/app/` öffnen; `localhost` und `127.0.0.1` sind für diesen Check ausgeschlossen.
-3. `tests/fixtures.js` und danach `tests/browser-fixtures.js` als lokale Testskripte laden.
-4. `await installGastroFixture("success")` ausführen.
+1. Live Server aus der Projektwurzel starten (`liveServer.settings.root: "/"`).
+2. `http://127.0.0.1:5500/app/` öffnen; bei anderer Konfiguration den aktiven Port verwenden.
+3. Ein anfänglicher `/app/dzt`-404 ist ohne ODAS-Backend zu erwarten. Für die Testdaten in der Browser-Konsole ausführen:
 
-Der Initialaufruf von `/app/dzt` liefert lokal ohne Relay einen erwarteten 404. Nach der Fixture-Installation werden ausschließlich die Relay-Anfragen durch synthetische SPARQL-Bindings beantwortet. OSM-Kacheln dürfen separat geladen werden.
+```js
+for (const src of ["../tests/fixtures.js", "../tests/browser-fixtures.js"]) {
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+await installGastroFixture("success");
+```
+
+Vor jedem anderen Szenario neu laden und die Fixture erneut installieren. `window.gastroFixtureResult` protokolliert Requests, unerwartete Abrufe und Fehler. Der Demo-Hinweis muss sichtbar bleiben. Base-Dateien, Instanzkonfiguration des Stores und Produktionsdaten werden nicht geändert.
 
 ## Szenarien
 
-| Modus | Erwartung |
+| Modus | Zu prüfender Zustand |
 |---|---|
-| `success` | Karte, Liste, Typ-/Küchenfilter und Detailansicht werden mit synthetischen Daten bedient. |
-| `paging` | Drei Seiten mit 200 + 200 + 1 IDs und anschließend eine leere Seite; 401 IDs bleiben erreichbar. |
-| `all-invalid` | Eine volle Seite mit außerhalb liegenden Punkten wird verworfen, der Cursor bleibt fortsetzbar. |
-| `empty` | Abgeschlossene leere Quelle zeigt „Keine Daten gefunden.“. |
-| `detail-error` | Übersicht bleibt nutzbar; Detailbereich zeigt einen separaten Fehler. |
-| `xss` | Name/Beschreibung mit HTML-Fragmenten; kein Skript-/Bildkontakt und keine globale XSS-Variable. |
-| `image` | Eigenes lokales SVG-Testbild mit Nachweis; Galerie, Fokus und Bildwechsel prüfen. |
-| `image-fail` | Defektes Testbild führt zu einer fotofreien Darstellung, nicht zu kaputter Gesamtansicht. |
-| `error-401`, `error-403`, `error-404`, `error-429`, `error-500` | Statuszustände bleiben unterscheidbar; kein Kontakt zum direkten DZT-Host. |
-| `html-200`, `broken-json` | HTML-/JSON-Fehler werden als Payloadfehler behandelt. |
+| `success` | Karte/Liste/Katalog, Filter/Sortierung, echtes Detail-Nachladen |
+| `paging` | 200 + 200 + 1 + leere Seite: 401 eindeutige IDs erreichbar |
+| `all-invalid` | Verworfene volle Seite beendet Quellpaging nicht still |
+| `empty` | Gültige leere Quelle klar als leer angezeigt |
+| `detail-error` | Übersicht nutzbar, sichtbarer separater Detailfehler |
+| `xss` | Fremdtext bleibt Text, keine ausführbaren HTML-/Script-Senken |
+| `image` | Nachweis je Foto, Galerie, Tastatur, Fokus und Rückkehr |
+| `image-fail` | Bildausfall beschädigt nicht die übrige Detailansicht |
+| `error-401`, `error-403`, `error-404`, `error-429`, `error-500` | Fehlerstatus unterscheidbar, kein direkter DZT-Aufruf |
+| `html-200`, `broken-json` | Falsche Antwort nicht als „keine Treffer“ behandeln |
 
-## Interaktions- und Geometrieproben
+## Besonders wichtige Regressionen
 
-- Karte/List/Katalog umschalten; Filter, Auswahl und Listenposition bleiben erhalten.
-- `Gebiet anzeigen` verändert nur den Kartenausschnitt.
-- Auswahl über Liste, Katalog und Karte testen; Rapid-Auswahl A→B mit verspäteter A-Antwort prüfen.
-- Vor/nach Resize den Kartenmittelpunkt und `invalidateSize({ animate: false, pan: true })` prüfen.
-- Navigationswechsel über Logo und vorhandene Menüseiten ausführen; nach Rückkehr keine doppelte Leaflet-Karte.
-- Viewports 320×740, 390×844, 768×1024 und 1440×900 sowie 390×500 und 200-%-Zoom prüfen.
-- Eigene sichtbare Buttons und Links auf mindestens 44×44 CSS-Pixel prüfen.
-- Kein horizontales Seitenscrollen; Footer, OSM-Attribution und letzte Bildnachweise erreichbar.
-- `fetch`-Requestliste enthält keine direkte DZT- oder `/odp-data`-Anfrage.
+- Über **Liste, Katalog und Markerpopup** Details öffnen; die zweite Antwort muss Beschreibung/Öffnungszeiten tatsächlich ergänzen. Nicht nur `selectGastroPoi()` isoliert testen.
+- A→B schnell auswählen bzw. Dialog vor Antwort schließen: verspätete A-Antwort darf B nicht überschreiben und keinen geschlossenen Dialog erneut öffnen.
+- Vollständigen Urheber/Lizenz/Quelle eines Testbildes mit dem sichtbaren Nachweis abgleichen; Datensatznachweis getrennt vom Foto.
+- Rohdatenansicht enthält tatsächliche JSON-LD-Knoten, nicht `{}`. Kopierfehler darf kein „Kopiert“ erzeugen.
+- Nur in `cuisines` vorkommendes Wort suchen; passender Betrieb bleibt auffindbar.
+- Detail-/Galerieaktionen mit Tastatur bedienen, Escape schließen und Fokus zurückerhalten.
+- In der Ergebnisliste „Details ansehen“ hovern und per Tab fokussieren: weiße Schrift auf dunkelgrünem Hintergrund, Textkontrast mindestens 4,5:1; Tastaturfokus sichtbar und Enter öffnet weiterhin Details. Erst nach Ende der CSS-Transition messen (Regression seit 1.2.5).
+- Hashwechsel bei offener Galerie/Modal; nach Rückkehr keine Alt-Overlays oder zweite Karte.
+- App-Icon unter `/app/` und `app/index.html` ohne Asset-404.
+- Breiten 320, 390, 768 und 1440 px; keine horizontale Dokumentüberbreite, mobile Liste samt letztem Eintrag erreichbar.
 
-## Ergebnisprotokoll
+## ODAS-Auslieferung getrennt prüfen
 
-`window.gastroFixtureResult` enthält `mode`, `requests`, `unexpected` und `errors`. Der tatsächliche Screenshot-/Geometrie-Befund wird unter `tests/evidence/` abgelegt, nicht im App-Paket.
+Auf einer echten ODAS-Testinstanz liegen die App-Dateien flach an der Instanzbasis; `assets/` ist dort direkt relativ erreichbar. Die Config kommt vom Store, Daten vom `/dzt`-Relay. Ein lokaler Fixture-Lauf beweist diesen externen Dienst nicht. Vor Live-Abnahme den finalen ZIP-Stand an der ausdrücklich autorisierten Testinstanz prüfen.
 
-## Autorisierte Nicht-Loopback-Prüfung
-
-Für die App-Browserprüfung wird **nicht** `localhost` oder `127.0.0.1` verwendet. Der Loopback-Zweig von `app-base.js` lädt die lokale Config und entspricht nicht dem autorisierten Instanzpfad. Der lokale ODAS-Testzugang ist:
-
-```text
-http://odas-dev.invalid:3000
-```
-
-Die read-only Inventurprüfung am ODAS-Testziel wird unter `tests/evidence/redesign-browser.md` dokumentiert. Für die nicht veröffentlichte Gastrofinder-Implementierung wird die App nur über eine temporäre, nicht eingecheckte Nicht-Loopback-Fixture-Instanz geprüft; dabei wird der Nicht-Loopback-`app-base.js`-Pfad mit einer temporären `app/config` geprüft. Das ist kein Live-Nachweis und keine Veröffentlichung.
-
-Die Fixture-Screenshots `redesign-*.png` sind statische, aus dem tatsächlich gerenderten Fixture-DOM erzeugte Layout-Snapshots mit schematischem Kartenhintergrund. `redesign-live-ip.png` ist der direkt gerenderte Browserstand am Nicht-Loopback-Testhost mit synthetischen Daten. Alle Bilder tragen den Banner `Synthetische Testdaten · keine Live-Daten`.
+Aktuelle Verifikation: [`evidence/release-readiness-2026-10-08.md`](evidence/release-readiness-2026-10-08.md). Ältere Entwicklungszwischenstände sind nicht die aktuelle Abnahme und wurden aus dem aktiven Screenshotbestand archiviert.

@@ -2,9 +2,9 @@
   "source": {
     "url": "https://download.geonames.org/export/dump/cities1000.zip",
     "license": "CC BY 4.0",
-    "retrievedAt": "2026-09-22",
-    "sha256": "56fb681d6daf41f0fad2e8ee3431082399f3b321daea102fcf25c02bfa8bb370",
-    "maxModificationDate": "2026-09-23"
+    "retrievedAt": "2026-10-08",
+    "sha256": "45fe6cd44e4b2228bb9fdfca5fc5841a83dbdc6cfa7b360d37e42366bd117838",
+    "maxModificationDate": "2026-10-07"
   },
   "places": [
     {
@@ -3382,6 +3382,14 @@
       "admin2": "00",
       "lat": 52.00304,
       "lng": 11.63851
+    },
+    {
+      "id": "2811405",
+      "name": "Welschingen",
+      "admin1": "01",
+      "admin2": "083",
+      "lat": 47.82462,
+      "lng": 8.76151
     },
     {
       "id": "2811420",
@@ -15796,8 +15804,8 @@
       "name": "Riedenberg",
       "admin1": "01",
       "admin2": "081",
-      "lat": 48.74114,
-      "lng": 9.21237
+      "lat": 48.737,
+      "lng": 9.214
     },
     {
       "id": "2847237",
@@ -23200,14 +23208,6 @@
       "lng": 8.77649
     },
     {
-      "id": "2865114",
-      "name": "Neuhausen",
-      "admin1": "01",
-      "admin2": "083",
-      "lat": 47.83754,
-      "lng": 8.77449
-    },
-    {
       "id": "2865123",
       "name": "Neuhäusel",
       "admin1": "08",
@@ -24518,6 +24518,14 @@
       "admin2": "083",
       "lat": 47.91667,
       "lng": 9.01667
+    },
+    {
+      "id": "2867982",
+      "name": "Mühlheim an der Donau",
+      "admin1": "01",
+      "admin2": "083",
+      "lat": 48.03122,
+      "lng": 8.88361
     },
     {
       "id": "2867983",
@@ -38836,8 +38844,8 @@
       "name": "Halensee",
       "admin1": "16",
       "admin2": "00",
-      "lat": 52.49005,
-      "lng": 13.29602
+      "lat": 52.498,
+      "lng": 13.292
     },
     {
       "id": "2911579",
@@ -40724,8 +40732,8 @@
       "name": "Gremberghoven",
       "admin1": "07",
       "admin2": "053",
-      "lat": 50.90152,
-      "lng": 7.06129
+      "lat": 50.905,
+      "lng": 7.055
     },
     {
       "id": "2917737",
@@ -56672,6 +56680,14 @@
       "lng": 11.30845
     },
     {
+      "id": "2955927",
+      "name": "Anselfingen",
+      "admin1": "01",
+      "admin2": "083",
+      "lat": 47.84491,
+      "lng": 8.76355
+    },
+    {
       "id": "2955936",
       "name": "Ansbach",
       "admin1": "02",
@@ -59756,8 +59772,8 @@
       "name": "Charlottenburg-Nord",
       "admin1": "16",
       "admin2": "00",
-      "lat": 52.53048,
-      "lng": 13.29371
+      "lat": 52.533,
+      "lng": 13.295
     },
     {
       "id": "6545310",

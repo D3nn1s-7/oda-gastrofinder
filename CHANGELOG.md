@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.2.6 - 2026-10-09
+- FIX: Katalog-Bildnachweise haben einen eigenen umbrechenden Bereich; lange Credits und Lizenzlinks überlagern keine Betriebsangaben mehr.
+- FIX: Einheitliches Gastrofinder-App-Logo auf Sekundärseiten und im Menükopf, ohne Portal-/Instanzkonfiguration zu überschreiben.
+- FIX: Bedienaktionen, Links, Navigation und Fokuszustände verwenden konsistent Grün; Braun bleibt der Café-Kennzeichnung vorbehalten.
+- DOC: Aktuelle sechs Desktop-/Mobile-Screenshots und Bildnachweise aktualisiert.
+
+## 1.2.5 - 2026-10-08
+- FIX: „Details ansehen“ in der Ergebnisliste bleibt bei Hover und Tastaturfokus durch weiße Schrift auf dunkelgrünem Hintergrund deutlich lesbar.
+
+## 1.2.4 - 2026-10-08
+- DOC: Drei aktuelle Desktop- und drei Mobile-Screenshots für Übersicht, Katalog und Details aufgenommen und im Paket verknüpft; Laufzeitverhalten unverändert.
+
+## 1.2.3 - 2026-10-08
+- FIX: Sichtbare Detailaktionen mit dem validierten Detailabruf verbunden; Lade-, Fehler- und Auswahlzustände bleiben synchron.
+- FIX: Datensatz- und Bildnachweise in Details und Galerie erhalten; echte RDF-Quelldaten als JSON-LD und ehrliche Rückmeldung beim Kopieren.
+- FIX: Küchensuche, regionale deutsche Sprachkennzeichen, lokale Assetpfade und Tastatur-/Touchbedienung korrigiert.
+- FIX: Verschachtelte DZT-Beschreibungstexte und Rechteinhaber korrekt aufgelöst; Detail-`Retry-After`, Cache-Wiederöffnung und Galerie-Fokus/Listener über Modalübergänge abgesichert.
+- DOC: README, Paketbeschreibung, Datenschutz, Schema, Lizenznachweise und Store-Screenshots aktualisiert; eigener Code unter MIT.
+- BUILD: Eigenständiges `make test`; ZIPs werden frisch einschließlich Lizenztext statt als veraltbares Update gebaut.
+
+## 1.2.2 - 2026-10-02
+- FIX: ODAS-Service-Deklaration in `odas-services` korrigiert.
+
 ## 1.2.1 - 2026-09-29
 - **FIX:** Kartenklick- und Auswahl-Lifecycle entkoppelt (Option 1A) – Schließen des Detailmodals setzt die Kartenauswahl sauber zurück (`hidden.bs.modal`), Klick auf Listeneintrag fokussiert auf der Karte ohne dauerhafte Hervorhebung.
 - **STYLE:** Vollständige Harmonisierung der Katalogansicht mit der Gourmet-Farbpalette (Option 2A) – Entfernung von Bootstrap-Standardfarben (Blau) zugunsten von `.gf-btn-outline-forest`, `.gf-btn-forest`, warmen Terracotta-Akzenten und Waldgrün-Badges.

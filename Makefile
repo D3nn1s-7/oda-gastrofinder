@@ -1,5 +1,5 @@
 #
-# ODAS Generic App
+# Gastrofinder – ODAS App
 # (C) Ondics, 2026
 #
 
@@ -23,10 +23,10 @@ DATE := $(shell date '+%Y%m%d')
 # help-systematik
 # build muss phony sein (forcierter build), weil es
 # als verzeichnis existiert und sonst nie gebaut werden w�rde
-.PHONY: help build stats
+.PHONY: help up down down-volumes logs build bash ps config zip test check-app
 
 help:
-	@echo "# ODAS Generic App"
+	@echo "# Gastrofinder – ODAS App"
 	@echo "# Ondics, 2026"
 	@echo "# dir = ${current_dir}"
 	@echo Befehle: make ...
@@ -59,9 +59,24 @@ ps: ## what's up?
 config: ## show docker-compose config 
 	${DC} config
 
-zip: ## App zur Auslieferung vorbereiten
-	zip -r ${current_dir}.zip \
-	 	app assets app-package.json CHANGELOG.md
+zip: ## Frisches Lieferpaket inkl. sechs Screenshots und LICENSE erstellen
+	@set -eu; \
+		tmpdir=$$(mktemp -d .odas-zip.XXXXXX); \
+		trap 'rm -rf "$$tmpdir"' EXIT HUP INT TERM; \
+		zip -qr "$$tmpdir/${current_dir}.zip" app assets app-package.json CHANGELOG.md LICENSE \
+			-x '*/.DS_Store' '*/__pycache__/*' '*/__MACOSX/*'; \
+		mv "$$tmpdir/${current_dir}.zip" "${current_dir}.zip"; \
+		echo "${current_dir}.zip frisch erstellt"
+
+test: ## Runtime, Metadaten und ZIP-Rezeptur prüfen (Node.js, Python 3, zip)
+	node --check app/app.js
+	node --check app/app-base.js
+	node --test tests/*.test.cjs
+	python3 -m unittest discover -s tests -p 'test_places.py'
+	@for file in app-package.json odas-config/config.json assets/schema.json; do \
+		python3 -m json.tool "$$file" >/dev/null || exit 1; \
+	done
+	python3 tools/test-package.py
 
 check-app: ## App prüfen mit Skript aus ODAS-Tools
 	echo "App prüfen"

@@ -462,6 +462,7 @@ function buildGastroQuery(region, idPage, detail) {
     "schema:servesCuisine",
     "schema:sdLicense",
     "schema:sdPublisher",
+    "schema:publisher",
     "schema:license",
     "schema:creator",
     "schema:author",
@@ -490,6 +491,7 @@ function buildGastroQuery(region, idPage, detail) {
     "schema:author",
     "schema:copyrightHolder",
   ];
+  if (detail) childFields.push("schema:text");
   const hourFields = ["schema:dayOfWeek", "schema:opens", "schema:closes", "schema:validFrom", "schema:validThrough"];
   const subjectImageFilter = "FILTER NOT EXISTS { ?id schema:image ?other . FILTER(STR(?other) < STR(?subject)) }";
   const rootPart = `
@@ -503,7 +505,7 @@ function buildGastroQuery(region, idPage, detail) {
   UNION
   {
     ?id ?link ?subject .
-    VALUES ?link { schema:geo schema:address schema:sdLicense schema:sdPublisher }
+    VALUES ?link { schema:geo schema:address schema:sdLicense schema:sdPublisher schema:publisher schema:creator schema:author schema:copyrightHolder ${detail ? "schema:description" : ""} }
     ?subject ?predicate ?object .
     ${buildGastroFieldList(childFields)}
   }
@@ -522,10 +524,11 @@ function buildGastroQuery(region, idPage, detail) {
   }` : ""}
   UNION
   {
-    ?id schema:image ?subject .
-    ?subject ?imageLink ?nestedSubject .
-    VALUES ?imageLink { schema:creator schema:author schema:copyrightHolder }
-    ?nestedSubject ?predicate ?object .
+    ?id ?rightsLink ?rightsNode .
+    VALUES ?rightsLink { schema:image schema:sdLicense }
+    ?rightsNode ?rightsParty ?subject .
+    VALUES ?rightsParty { schema:creator schema:author schema:copyrightHolder }
+    ?subject ?predicate ?object .
     VALUES ?predicate { schema:name schema:url rdfs:label }
   }`;
   return `${buildSparqlPrefixes()}\nSELECT DISTINCT ?id ?subject ?predicate ?object WHERE {\n  { ${idPage} }\n  ${rootPart}\n}\nORDER BY STR(?id) STR(?subject) STR(?predicate) STR(?object)`;
@@ -571,7 +574,7 @@ function buildDetailQuery(id) {
 function validateDztBinding(binding) {
   if (!binding || typeof binding !== "object") return false;
   return ["id", "subject", "predicate"].every((key) => isGastroTerm(binding[key])) &&
-    binding.id.type === "uri" && binding.subject.type === "uri" &&
+    binding.id.type === "uri" && ["uri", "bnode"].includes(binding.subject.type) &&
     binding.predicate.type === "uri" && isGastroTerm(binding.object);
 }
 
@@ -659,15 +662,43 @@ function directValues(group, predicate) {
 
 function directNodes(group, predicate) {
   return group.rows
-    .filter((row) => row.subject.value === group.id && row.predicate.value === predicate && row.object.type === "uri")
+    .filter((row) => row.subject.value === group.id && row.predicate.value === predicate && ["uri", "bnode"].includes(row.object.type))
     .map((row) => row.object.value);
+}
+
+function jsonLdNodeId(term) {
+  return term.type === "bnode" && !String(term.value).startsWith("_:") ? `_:${term.value}` : term.value;
+}
+
+function jsonLdRdfValue(term) {
+  if (term.type === "uri" || term.type === "bnode") return { "@id": jsonLdNodeId(term) };
+  const value = { "@value": term.value };
+  if (term["xml:lang"]) value["@language"] = term["xml:lang"];
+  else if (term.datatype) value["@type"] = term.datatype;
+  return value;
+}
+
+function normalizeGastroJsonLd(group) {
+  const nodes = new Map();
+  for (const row of group.rows) {
+    if (!validateDztBinding(row) || !/^https?:\/\//i.test(row.predicate.value)) {
+      throw dztError("PAYLOAD", "Die Antwort der Datenquelle enthält ungültige RDF-Tripel.");
+    }
+    const subjectId = jsonLdNodeId(row.subject);
+    if (!nodes.has(subjectId)) nodes.set(subjectId, { "@id": subjectId });
+    const node = nodes.get(subjectId);
+    const predicate = row.predicate.value;
+    if (!Array.isArray(node[predicate])) node[predicate] = [];
+    node[predicate].push(jsonLdRdfValue(row.object));
+  }
+  return { "@graph": [...nodes.values()].sort((a, b) => compareSourceIds(a["@id"], b["@id"])) };
 }
 
 function chooseLocalizedValue(entries, fallback = "") {
   const candidates = entries.filter((entry) => entry && entry.value);
-  const german = candidates.filter((entry) => String(entry.lang || "").toLowerCase() === "de");
+  const german = candidates.filter((entry) => /^(de)(?:-|$)/i.test(String(entry.lang || "")));
   const neutral = candidates.filter((entry) => !entry.lang);
-  const other = candidates.filter((entry) => entry.lang && !String(entry.lang).toLowerCase().startsWith("de"));
+  const other = candidates.filter((entry) => entry.lang && !/^(de)(?:-|$)/i.test(String(entry.lang)));
   const chosen = german.length ? german : neutral.length ? neutral : other;
   chosen.sort((a, b) => compareSourceIds(a.value, b.value));
   return chosen.length ? String(chosen[0].value) : fallback;
@@ -685,13 +716,28 @@ function normalizeGastroLicense(licenseUrl, evidence) {
   if (!supported.has(url)) return null;
   const requiresEvidence = url !== "https://creativecommons.org/publicdomain/zero/1.0/";
   if (requiresEvidence && !evidence) return null;
-  return { url, attribution: requiresEvidence ? String(evidence) : "" };
+  return { url, attribution: requiresEvidence ? String(evidence) : "", label: supported.get(url) };
 }
 
 function collectNodeValues(group, node, predicates) {
   const values = new Map();
   for (const predicate of predicates) values.set(predicate, valuesFor(group, node, predicate));
   return values;
+}
+
+function gastroAttributionValues(group, node) {
+  const predicates = ["creditText", "creator", "author", "copyrightHolder", "copyrightNotice", "publisher", "sdPublisher"]
+    .map((name) => `https://schema.org/${name}`);
+  const evidence = [];
+  for (const row of rowsForSubject(group, node).filter((entry) => predicates.includes(entry.predicate.value))) {
+    const names = ["uri", "bnode"].includes(row.object.type)
+      ? rowsForSubject(group, row.object.value).filter((entry) =>
+        ["https://schema.org/name", "http://www.w3.org/2000/01/rdf-schema#label"].includes(entry.predicate.value) && entry.object.type === "literal")
+      : [row];
+    const name = chooseLocalizedValue(names.map((entry) => ({ value: entry.object.value, lang: entry.object["xml:lang"] || "" }))).trim();
+    if (name && !/^https?:\/\//i.test(name)) pushUnique(evidence, name);
+  }
+  return evidence;
 }
 
 function normalizeGastroImages(group, stage) {
@@ -704,20 +750,11 @@ function normalizeGastroImages(group, stage) {
       "https://schema.org/name",
       "https://schema.org/caption",
       "https://schema.org/license",
-      "https://schema.org/creditText",
-      "https://schema.org/creator",
-      "https://schema.org/author",
-      "https://schema.org/copyrightHolder",
     ]);
     const url = safeHttpUrl(values.get("https://schema.org/contentUrl")[0] || values.get("https://schema.org/url")[0]);
     if (!url) continue;
     const licenseValues = values.get("https://schema.org/license");
-    const credit = [
-      ...values.get("https://schema.org/creditText"),
-      ...values.get("https://schema.org/creator"),
-      ...values.get("https://schema.org/author"),
-      ...values.get("https://schema.org/copyrightHolder"),
-    ][0] || "";
+    const credit = gastroAttributionValues(group, imageId).join(" · ");
     const license = normalizeGastroLicense(licenseValues[0], credit);
     if (!license) continue;
     const image = {
@@ -825,15 +862,10 @@ function normalizeDztRows(bindings, region, stage) {
     const licenseValues = licenseNode
       ? valuesFor(group, licenseNode, "https://schema.org/license")
       : directValues(group, "https://schema.org/license");
-    const publisherNode = directNodes(group, "https://schema.org/sdPublisher")[0];
-    const evidence = [
-      ...directValues(group, "https://schema.org/creditText"),
-      ...directValues(group, "https://schema.org/creator"),
-      ...directValues(group, "https://schema.org/author"),
-      ...directValues(group, "https://schema.org/copyrightHolder"),
-      ...(publisherNode ? valuesFor(group, publisherNode, "https://schema.org/name") : []),
-      ...(publisherNode ? valuesFor(group, publisherNode, "rdfs:label") : []),
-    ][0] || "";
+    const evidence = [...new Set([
+      ...gastroAttributionValues(group, group.id),
+      ...(licenseNode ? gastroAttributionValues(group, licenseNode) : []),
+    ])].join(" · ");
     const dataLicense = normalizeGastroLicense(licenseValues[0], evidence);
     if (!dataLicense) {
       exclude("rights");
@@ -848,7 +880,13 @@ function normalizeDztRows(bindings, region, stage) {
     const telephones = [];
     for (const value of directValues(group, "https://schema.org/telephone")) pushUnique(telephones, safeTelephone(value));
     telephones.sort(compareSourceIds);
-    const description = directValues(group, "https://schema.org/description")[0] || "";
+    const descriptionRows = rowsForSubject(group, group.id)
+      .filter((row) => row.predicate.value === "https://schema.org/description")
+      .flatMap((row) => ["uri", "bnode"].includes(row.object.type)
+        ? rowsForSubject(group, row.object.value).filter((entry) => entry.predicate.value === "https://schema.org/text")
+        : [row])
+      .filter((row) => row.object.type === "literal");
+    const description = chooseLocalizedValue(descriptionRows.map((row) => ({ value: row.object.value, lang: row.object["xml:lang"] || "" })));
     pois.push({
       id,
       types,
@@ -864,6 +902,7 @@ function normalizeDztRows(bindings, region, stage) {
       openingHours: stage === "detail" ? normalizeGastroHours(group) : [],
       websites,
       telephones,
+      raw: normalizeGastroJsonLd(group),
     });
   }
   return { sourceIds, pois, excluded };
@@ -905,6 +944,7 @@ function createGastroState(sourceUrl, region) {
       resizeObserver: null,
       debounceTimer: null,
       gallery: null,
+      lightbox: null,
       mapPosition: null,
       mapResizeTimer: null,
       markerById: null,
@@ -996,6 +1036,7 @@ function stateMatchesText(poi, text) {
     poi.address && poi.address.street,
     poi.address && poi.address.postalCode,
     poi.address && poi.address.locality,
+    ...(Array.isArray(poi.cuisines) ? poi.cuisines : [poi.cuisines]),
   ];
   return values.some((value) => normalizeGastroPlaceName(value).includes(needle));
 }
@@ -1120,6 +1161,14 @@ function restoreGastroDetailFocus(root, state, id = null) {
 
 async function selectGastroPoi(state, id, notify = () => {}) {
   if (!state || !state.byId.has(id) || !state.runtime || !state.runtime.active) return;
+  if (!state.details.has(id) && state.detail.retryAt > Date.now()) {
+    state.selectedId = id;
+    state.detail.busy = false;
+    state.detail.error = state.detail.error || stateError("RATE_LIMIT", "Die Datenquelle ist gerade ausgelastet.");
+    if (state.runtime.root) openGastroDetailDialog(state.runtime.root, state, state.runtime.detailOpener);
+    notify();
+    return;
+  }
   if (state.selectedId === id && state.details.has(id)) {
     state.detail.busy = false;
     state.detail.error = null;
@@ -1137,7 +1186,7 @@ async function selectGastroPoi(state, id, notify = () => {}) {
   if (state.runtime.root) openGastroDetailDialog(state.runtime.root, state, state.runtime.detailOpener);
   if (state.details.has(id)) {
     state.detail.busy = false;
-    if (state.runtime.root) updateGastroDetailDialog(state.runtime.root, state);
+    openDetailModal(state, id, false, false);
     notify();
     return;
   }
@@ -1164,6 +1213,7 @@ async function selectGastroPoi(state, id, notify = () => {}) {
     state.detail.retryAt = 0;
     state.detail.busy = false;
     state.runtime.detailAbort = null;
+    openDetailModal(state, id, false, false);
     notify();
   } catch (error) {
     if (!stillCurrent() || (error && error.name === "AbortError")) return;
@@ -1171,6 +1221,7 @@ async function selectGastroPoi(state, id, notify = () => {}) {
     state.detail.retryAt = error && error.retryAt ? error.retryAt : 0;
     state.detail.busy = false;
     state.runtime.detailAbort = null;
+    openDetailModal(state, id, false, false);
     notify();
   } finally {
     if (stillCurrent()) {
@@ -1188,6 +1239,8 @@ function disposeGastroRuntime(state) {
   if (state.detail) state.detail.seq = (state.detail.seq || 0) + 1;
   if (runtime.pageAbort && typeof runtime.pageAbort.abort === "function") runtime.pageAbort.abort();
   if (runtime.detailAbort && typeof runtime.detailAbort.abort === "function") runtime.detailAbort.abort();
+  if (runtime.lightbox && typeof runtime.lightbox.close === "function") runtime.lightbox.close(true);
+  runtime.lightbox = null;
   if (runtime.events && typeof runtime.events.abort === "function") runtime.events.abort();
   if (typeof clearTimeout === "function") {
     if (runtime.debounceTimer !== null) clearTimeout(runtime.debounceTimer);
@@ -1326,6 +1379,21 @@ function gastroImageIsUsable(image) {
   return Boolean(normalizeGastroLicense(image.licenseUrl, image.credit));
 }
 
+function renderGastroImageAttribution(image, className = "") {
+  const license = image && normalizeGastroLicense(image.licenseUrl, image.credit);
+  const licenseUrl = license ? safeHttpUrl(license.url) : "";
+  const sourceUrl = safeHttpUrl(image && image.sourceUrl);
+  if (!image || (!licenseUrl && !sourceUrl && !image.credit)) return "";
+  return `<span class="gf-image-attribution ${escapeHtml(className)}"><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${licenseUrl ? `<a href="${escapeHtml(licenseUrl)}" target="_blank" rel="noopener noreferrer">Lizenz ${escapeHtml(license.label)}</a>` : ""}${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle</a>` : ""}</span>`;
+}
+
+function renderGastroDatasetLicense(dataLicense) {
+  const license = dataLicense && normalizeGastroLicense(dataLicense.url, dataLicense.attribution);
+  const url = license && safeHttpUrl(license.url);
+  if (!url) return "";
+  return `<div class="gf-dataset-license"><strong>Datensatzlizenz:</strong> <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(license.label)}</a>${license.attribution ? ` · ${escapeHtml(license.attribution)}` : ""}</div>`;
+}
+
 function gastroNoPhoto(label = "Gastrofinder") {
   return `<div class="gf-no-photo" aria-hidden="true"><span class="gf-no-photo-ring"></span>${gastroIcon("fork")}<span>${escapeHtml(label)}</span></div>`;
 }
@@ -1333,11 +1401,12 @@ function gastroNoPhoto(label = "Gastrofinder") {
 function renderGastroCard(poi, uid = "gf-card", selected = false) {
   const item = poi || {};
   const firstImage = (item.images && item.images[0]) || null;
-  const imgUrl = item.imageUrl || (firstImage && (firstImage.url || firstImage["schema:contentUrl"])) || "";
+  const imgUrl = firstImage && gastroImageIsUsable(firstImage) ? firstImage.url : "";
   const imgAlt = (firstImage && firstImage.title) || item.name || "Gastrofinder-Bild";
   const media = imgUrl
     ? `<img class="gf-card-thumb-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(imgAlt)}" loading="lazy">`
     : `<div class="gf-card-thumb-fallback">${item.isCafe ? "☕" : "🍴"}</div>`;
+  const imageAttribution = imgUrl ? renderGastroImageAttribution(firstImage, "gf-card-image-attribution") : "";
   const address = item.address || {};
   const locality = item.city || address.locality || address.city || "";
   const street = item.street || address.street || "";
@@ -1351,7 +1420,7 @@ function renderGastroCard(poi, uid = "gf-card", selected = false) {
   const typeLabels = gastroTypeLabels(item);
 
   return `<article id="${escapeHtml(`${uid}-card-${gastroDomToken(item.id)}`)}" class="gf-card gf-clean-card${selected ? " is-selected" : ""}" data-gf-card data-gf-id="${escapeHtml(item.id || "")}">
-    <div class="gf-card-thumb-wrap">${media}</div>
+    <div class="gf-card-thumb-wrap">${media}${imageAttribution ? `<div class="gf-card-photo-credit">${imageAttribution}</div>` : ""}</div>
     <div class="gf-card-content">
       <div class="gf-card-heading-wrap">
         <h3 class="gf-card-heading" title="${escapeHtml(item.name || "")}">${escapeHtml(item.name || "Name nicht angegeben")}</h3>
@@ -1403,10 +1472,10 @@ function renderGastroHours(hours) {
 
 function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
   if (status === "loading") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><div class="spinner-border gf-spinner-forest" role="status"><span class="visually-hidden">Details werden geladen …</span></div><p class="mt-3 text-muted">Details werden geladen …</p></div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body position-relative text-center p-5"><button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen"></button><div class="spinner-border gf-spinner-forest" role="status"><span class="visually-hidden">Details werden geladen …</span></div><p class="mt-3 text-muted">Details werden geladen …</p></div>`;
   }
   if (status === "error") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-secondary fw-semibold">Die Detailangaben konnten nicht geladen werden.</p><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-secondary fw-semibold" role="alert">Die Detailangaben konnten nicht geladen werden.</p><button type="button" class="btn btn-outline-forest btn-sm me-2" data-gf-detail-retry>Erneut versuchen</button><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
   }
 
   const item = poi || {};
@@ -1438,21 +1507,20 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
   const routeUrl = hasCoords ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}` : "";
 
-  // Images
-  const rawImages = (item.images && item.images.length > 0)
-    ? item.images
-    : (item.imageUrl ? [{ url: item.imageUrl }] : []);
+  // Only show images with independently verified photo rights.
+  const rawImages = Array.isArray(item.images) ? item.images : [];
   const images = rawImages.map((img) => {
     if (typeof img === "string") return { url: img };
     return {
       url: img.url || img["schema:contentUrl"] || img.contentUrl || "",
       title: img.title || name,
-      copyright: img.copyright || img.author || item.imageCopyright || "DZT",
-      license: img.license || item.imageLicense || ""
+      credit: img.credit || "",
+      licenseUrl: img.licenseUrl || "",
+      sourceUrl: img.sourceUrl || "",
     };
-  }).filter((img) => img.url);
+  }).filter(gastroImageIsUsable);
 
-  const heroImage = images[0] ? images[0].url : (item.imageUrl || "");
+  const heroImage = images[0] ? images[0].url : "";
 
   // Distance string
   const distText = (item.distanceKm != null && Number.isFinite(Number(item.distanceKm)))
@@ -1470,29 +1538,27 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
 
   return `
     ${heroImage ? `
-      <div class="gf-detail-hero-wrap" data-gf-hero-gallery style="cursor: pointer;" title="Tippen für Vollbild-Galerie">
-        <img src="${escapeHtml(heroImage)}" class="gf-detail-hero-img" alt="${escapeHtml(name)}">
-        <div class="gf-detail-hero-gradient"></div>
+      <div class="gf-detail-hero">
+        <button type="button" class="gf-detail-hero-wrap" data-gf-hero-gallery aria-label="Foto von ${escapeHtml(name)} in Vollbild ansehen" title="Tippen für Vollbild-Galerie">
+          <img src="${escapeHtml(heroImage)}" class="gf-detail-hero-img" alt="">
+          <span class="gf-detail-hero-gradient"></span>
+          <span class="gf-detail-hero-gallery-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span>${images.length > 1 ? `1 von ${images.length} Fotos` : "Vollbildansicht"}</span>
+            <span class="gf-gallery-zoom-hint">🔍</span>
+          </span>
+          <span class="gf-detail-hero-caption">
+            <span class="gf-detail-hero-title">${escapeHtml(name)}</span>
+            <span class="gf-detail-hero-subtitle">
+              ${escapeHtml([city, item.region].filter(Boolean).join(" "))}
+              ${distText ? ` &bull; <strong>${escapeHtml(distText)}</strong>` : ""}
+            </span>
+          </span>
+        </button>
         <button type="button" class="gf-detail-close-btn" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
-        <div class="gf-detail-hero-gallery-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-          <span>${images.length > 1 ? `1 von ${images.length} Fotos` : "Vollbildansicht"}</span>
-          <span class="gf-gallery-zoom-hint">🔍</span>
-        </div>
-        <div class="gf-detail-hero-caption">
-          <h2 class="gf-detail-hero-title">${escapeHtml(name)}</h2>
-          <div class="gf-detail-hero-subtitle">
-            ${escapeHtml([city, item.region].filter(Boolean).join(" "))}
-            ${distText ? ` &bull; <strong>${escapeHtml(distText)}</strong>` : ""}
-          </div>
-        </div>
-        ${images[0] && (images[0].copyright || images[0].license) ? `
-          <div class="gf-detail-hero-license">
-            Bild: ${escapeHtml(images[0].copyright || "DZT")} ${images[0].license ? `(${escapeHtml(images[0].license)})` : ""}
-          </div>
-        ` : ""}
+        ${renderGastroImageAttribution(images[0], "gf-detail-hero-license")}
       </div>
     ` : `
       <div class="modal-header border-0 pb-0">
@@ -1502,6 +1568,7 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
     `}
 
     <div class="gf-detail-dialog-content modal-body p-4" id="${escapeHtml(`${uid}-content`)}">
+      ${renderGastroDatasetLicense(item.dataLicense)}
       <div class="d-flex flex-wrap gap-2 mb-3">
         ${isRestaurant ? '<span class="badge gf-badge-restaurant px-2.5 py-1.5 fs-6 fw-semibold">🍽️ Restaurant</span>' : ""}
         ${isCafe ? '<span class="badge gf-badge-cafe px-2.5 py-1.5 fs-6 fw-semibold">☕ Café & Bar</span>' : ""}
@@ -1588,6 +1655,7 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
               <button type="button" class="btn btn-sm btn-outline-secondary py-1" id="gf-${uid}-copy-raw-btn">
                 In Zwischenablage kopieren
               </button>
+              <p class="gf-copy-raw-status small mt-2 mb-0" data-gf-copy-status role="status" aria-live="polite"></p>
             </div>
           </div>
         </div>
@@ -1666,7 +1734,7 @@ function renderGastroShell(root, state) {
       </div>
     </div>
     <div class="gf-brandbar" data-gf-brandbar>
-      <img src="assets/odas-app-icon.svg" class="gf-brandbar-logo" alt="Logo" onerror="this.src='favicon.png'">
+      <img src="${escapeHtml(resolveGastroBrandAssetUrl("odas-app-icon.svg"))}" class="gf-brandbar-logo" alt="Logo" onerror="this.onerror=null;this.src='${escapeHtml(resolveGastroBrandAssetUrl("favicon.png"))}'">
       <div class="gf-brandbar-text">
         <strong>${escapeHtml(appTitle)}</strong>
         <span>Genussatlas · ${escapeHtml(regionName)}</span>
@@ -1681,7 +1749,7 @@ function renderGastroShell(root, state) {
     <aside id="gf-${uid}-cockpit" class="gf-cockpit" data-gf-cockpit aria-label="Suche und Ergebnisse">
       <div class="gf-cockpit-header">
         <div class="gf-cockpit-brand">
-          <img src="assets/odas-app-icon.svg" class="gf-cockpit-logo" alt="Logo" onerror="this.src='favicon.png'">
+          <img src="${escapeHtml(resolveGastroBrandAssetUrl("odas-app-icon.svg"))}" class="gf-cockpit-logo" alt="Logo" onerror="this.onerror=null;this.src='${escapeHtml(resolveGastroBrandAssetUrl("favicon.png"))}'">
           <div class="gf-cockpit-title-wrap">
             <strong class="gf-cockpit-title">${escapeHtml(appTitle)}</strong>
             <span class="gf-cockpit-subtitle">${escapeHtml(regionName)} · ${escapeHtml(radius)}</span>
@@ -1709,7 +1777,7 @@ function renderGastroShell(root, state) {
     <div id="gf-${uid}-loading-overlay" class="gf-loading-overlay" data-gf-loading-overlay>
       <div class="gf-loading-card">
         <div class="gf-loading-icon-wrap">
-          <img src="assets/odas-app-icon.svg" class="gf-loading-icon" alt="Laden…" onerror="this.src='favicon.png'">
+          <img src="${escapeHtml(resolveGastroBrandAssetUrl("odas-app-icon.svg"))}" class="gf-loading-icon" alt="Laden…" onerror="this.onerror=null;this.src='${escapeHtml(resolveGastroBrandAssetUrl("favicon.png"))}'">
           <div class="gf-loading-spinner-ring"></div>
         </div>
         <h3 class="gf-loading-title">Gastronomiebetriebe werden geladen…</h3>
@@ -1774,7 +1842,7 @@ function updateGastroView(root, state) {
     const radius = `${state.region.radiusKm || 25} km Umkreis`;
     const appTitle = state.config && state.config.titel ? state.config.titel : "Gastrofinder";
     brandbar.innerHTML = `
-      <img src="assets/odas-app-icon.svg" class="gf-brandbar-logo" alt="Logo" onerror="this.src='favicon.png'">
+      <img src="${escapeHtml(resolveGastroBrandAssetUrl("odas-app-icon.svg"))}" class="gf-brandbar-logo" alt="Logo" onerror="this.onerror=null;this.src='${escapeHtml(resolveGastroBrandAssetUrl("favicon.png"))}'">
       <div class="gf-brandbar-text">
         <strong>${escapeHtml(appTitle)}</strong>
         <span>Genussatlas · ${escapeHtml(regionName)}</span>
@@ -1953,11 +2021,27 @@ function setupDetailModalListeners(modalEl, state, notify = () => {}) {
   if (!modalEl || typeof modalEl.addEventListener !== "function") return;
   if (modalEl.__gfDetailListenersSet) return;
   modalEl.__gfDetailListenersSet = true;
+  modalEl.addEventListener("show.bs.modal", () => { modalEl.__gfShown = false; });
+  modalEl.addEventListener("shown.bs.modal", () => { modalEl.__gfShown = true; });
   modalEl.addEventListener("hidden.bs.modal", () => {
-    if (!state.runtime || !state.runtime.navigatingToMap) {
-      state.selectedId = null;
+    if (state.runtime && state.runtime.detailAbort && typeof state.runtime.detailAbort.abort === "function") {
+      state.runtime.detailAbort.abort();
+      state.runtime.detailAbort = null;
     }
-    if (state.runtime) state.runtime.navigatingToMap = false;
+    if (state.detail) {
+      state.detail.seq += 1;
+      state.detail.busy = false;
+    }
+    const navigatingToMap = Boolean(state.runtime && state.runtime.navigatingToMap);
+    const opener = state.runtime && state.runtime.detailOpener;
+    const openerId = opener && typeof opener.getAttribute === "function" ? opener.getAttribute("data-gf-id") : null;
+    if (!navigatingToMap) state.selectedId = null;
+    if (state.runtime) {
+      state.runtime.navigatingToMap = false;
+      state.runtime.detailOpener = null;
+    }
+    if (!navigatingToMap && opener && opener.isConnected !== false && typeof opener.focus === "function") opener.focus();
+    else if (!navigatingToMap && state.runtime && state.runtime.root) restoreGastroDetailFocus(state.runtime.root, state, openerId);
     notify();
   });
 }
@@ -1998,19 +2082,26 @@ function focusPoiOnMap(state, poiId) {
   }
 }
 
-function openDetailModal(state, poiId) {
+function openDetailModal(state, poiId, shouldLoadDetails = true, showModal = true) {
   if (!state) return;
   const targetId = typeof poiId === "string" ? poiId : (poiId && poiId.id ? poiId.id : state.selectedId);
   const poi = (typeof poiId === "object" && poiId !== null && poiId.name)
     ? poiId
-    : ((state.pois || []).find((p) => p.id === targetId)
-      || (state.allPois || []).find((p) => p.id === targetId)
+    : ((state.pois || []).find((candidate) => candidate.id === targetId)
+      || (state.allPois || []).find((candidate) => candidate.id === targetId)
       || (state.byId && state.byId.get ? state.byId.get(targetId) : null));
   if (!poi) return;
+
+  if (shouldLoadDetails && state.runtime && state.runtime.active && state.runtime.root) {
+    selectGastroPoi(state, poi.id, () => {
+      if (state.runtime && state.runtime.root) updateGastroView(state.runtime.root, state);
+    });
+    return;
+  }
   if (state.runtime) state.selectedId = poi.id;
 
   const uid = state.runtime ? state.runtime.uid : (state.uid || "gf");
-  let modalEl = (typeof document !== "undefined" && document.getElementById)
+  let modalEl = typeof document !== "undefined" && document.getElementById
     ? (document.getElementById(`gf-${uid}-detail-modal`) || document.getElementById("gf-detail-modal"))
     : null;
   if (!modalEl && typeof document !== "undefined" && document.createElement) {
@@ -2019,11 +2110,8 @@ function openDetailModal(state, poiId) {
     modalEl.id = `gf-${uid}-detail-modal`;
     modalEl.tabIndex = -1;
     modalEl.setAttribute("aria-hidden", "true");
-    modalEl.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg overflow-hidden" id="gf-${uid}-detail-modal-content"></div>
-      </div>
-    `;
+    modalEl.setAttribute("aria-label", "Details zum Gastronomiebetrieb");
+    modalEl.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable"><div class="modal-content border-0 shadow-lg overflow-hidden" id="gf-${uid}-detail-modal-content"></div></div>`;
     if (document.body && typeof document.body.appendChild === "function") {
       document.body.appendChild(modalEl);
       if (state.runtime) {
@@ -2032,22 +2120,27 @@ function openDetailModal(state, poiId) {
       }
     }
   }
+  if (modalEl) setupDetailModalListeners(modalEl, state, () => {
+    if (state.runtime && state.runtime.root) updateGastroView(state.runtime.root, state);
+  });
 
-  if (modalEl) {
-    setupDetailModalListeners(modalEl, state, () => {
-      if (state.runtime && state.runtime.root) updateGastroView(state.runtime.root, state);
-    });
-  }
-
-  let modalContent = (modalEl && modalEl.querySelector && (modalEl.querySelector(`#gf-${uid}-detail-modal-content`) || modalEl.querySelector(".modal-content"))) || modalEl;
+  const modalContent = (modalEl && modalEl.querySelector &&
+    (modalEl.querySelector(`#gf-${uid}-detail-modal-content`) || modalEl.querySelector(".modal-content"))) || modalEl;
   if (modalContent) {
-    modalContent.innerHTML = renderGastroHeroDetails(poi, uid, "ready");
+    const detail = state.details && state.details.get ? state.details.get(poi.id) : null;
+    const isSelected = state.selectedId === poi.id;
+    const status = state.detail && isSelected && state.detail.error ? "error"
+      : state.detail && isSelected && state.detail.busy ? "loading"
+        : detail ? "ready" : "ready";
+    const displayedPoi = detail || poi;
+    modalContent.innerHTML = renderGastroHeroDetails(displayedPoi, uid, status);
+    bindGastroImageFallbacks(modalContent);
 
     const showOnMapBtn = modalContent.querySelector && modalContent.querySelector("[data-gf-show-on-map]");
     if (showOnMapBtn && typeof showOnMapBtn.addEventListener === "function") {
       showOnMapBtn.addEventListener("click", () => {
         if (state.runtime) state.runtime.navigatingToMap = true;
-        if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal && modalEl) {
+        if (typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
           const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
           modal.hide();
         }
@@ -2055,151 +2148,203 @@ function openDetailModal(state, poiId) {
       });
     }
 
+    const retryBtn = modalContent.querySelector && modalContent.querySelector("[data-gf-detail-retry]");
+    if (retryBtn && typeof retryBtn.addEventListener === "function") {
+      if (state.detail && state.detail.retryAt > Date.now()) {
+        retryBtn.textContent = `Erneut versuchen ab ${new Date(state.detail.retryAt).toLocaleTimeString("de-DE")}`;
+      }
+      retryBtn.addEventListener("click", () => selectGastroPoi(state, poi.id, () => {
+        if (state.runtime && state.runtime.root) updateGastroView(state.runtime.root, state);
+      }));
+    }
+
     const copyRawBtn = modalContent.querySelector && modalContent.querySelector(`#gf-${uid}-copy-raw-btn`);
+    const copyStatus = modalContent.querySelector && modalContent.querySelector("[data-gf-copy-status]");
     if (copyRawBtn && typeof copyRawBtn.addEventListener === "function") {
-      copyRawBtn.addEventListener("click", () => {
-        const rawJson = JSON.stringify(poi.raw || {}, null, 2);
-        const originalText = copyRawBtn.textContent;
-        const finish = () => {
-          copyRawBtn.textContent = "Kopiert! ✓";
-          setTimeout(() => { copyRawBtn.textContent = originalText; }, 2000);
-        };
-        if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(rawJson).then(finish).catch(finish);
-        } else {
-          finish();
+      copyRawBtn.addEventListener("click", async () => {
+        const rawJson = JSON.stringify(displayedPoi.raw || {}, null, 2);
+        try {
+          if (typeof navigator === "undefined" || !navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
+            throw new Error("Clipboard nicht verfügbar");
+          }
+          await navigator.clipboard.writeText(rawJson);
+          if (copyStatus) copyStatus.textContent = "JSON wurde kopiert.";
+        } catch (_error) {
+          if (copyStatus) copyStatus.textContent = "Kopieren nicht möglich. Rohdaten können oben manuell kopiert werden.";
         }
       });
     }
 
     const heroWrap = modalContent.querySelector && modalContent.querySelector("[data-gf-hero-gallery]");
     if (heroWrap && typeof heroWrap.addEventListener === "function") {
-      heroWrap.addEventListener("click", (e) => {
-        if (e.target && e.target.closest && e.target.closest("[data-bs-dismiss='modal']")) return;
-        openLightbox(poi, 0);
+      heroWrap.addEventListener("click", (event) => {
+        openLightbox(displayedPoi, 0, state, event.currentTarget || heroWrap);
       });
     }
-
     if (modalContent.querySelectorAll) {
       modalContent.querySelectorAll("[data-gf-gallery-index]").forEach((thumb) => {
         if (typeof thumb.addEventListener === "function") {
           thumb.addEventListener("click", () => {
-            const idx = parseInt(thumb.getAttribute("data-gf-gallery-index"), 10) || 0;
-            openLightbox(poi, idx);
+            const index = parseInt(thumb.getAttribute("data-gf-gallery-index"), 10) || 0;
+            openLightbox(displayedPoi, index, state, thumb);
           });
         }
       });
     }
   }
 
-  if (modalEl && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
-    const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
+  if (showModal && modalEl && typeof window !== "undefined" && window.bootstrap && window.bootstrap.Modal) {
+    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
   }
 }
 
-function openLightbox(poi, initialIndex = 0) {
-  if (!poi) return;
-  const rawImages = (poi.images && poi.images.length > 0)
-    ? poi.images
-    : (poi.imageUrl ? [{ url: poi.imageUrl }] : []);
-
+function openLightbox(poi, initialIndex = 0, state = null, opener = null) {
+  if (!poi || typeof document === "undefined" || !document.createElement) return;
+  const rawImages = Array.isArray(poi.images) ? poi.images : [];
   const images = rawImages.map((img) => {
     if (typeof img === "string") return { url: img };
     return {
       url: img.url || img["schema:contentUrl"] || img.contentUrl || "",
-      copyright: img.copyright || img.author || poi.imageCopyright || "DZT",
-      license: img.license || poi.imageLicense || ""
+      title: img.title || poi.name || "",
+      credit: img.credit || "",
+      licenseUrl: img.licenseUrl || "",
+      sourceUrl: img.sourceUrl || "",
     };
-  }).filter((img) => img.url);
-
-  if (images.length === 0 || typeof document === "undefined" || !document.createElement) return;
+  }).filter(gastroImageIsUsable);
+  if (images.length === 0) return;
 
   let currentIndex = initialIndex;
   if (currentIndex < 0 || currentIndex >= images.length) currentIndex = 0;
 
   const existing = document.getElementById("gf-lightbox-overlay");
-  if (existing && typeof existing.remove === "function") existing.remove();
+  if (existing && typeof existing.__gfClose === "function") existing.__gfClose(true);
+  else if (existing && typeof existing.remove === "function") existing.remove();
 
+  const focusOpener = opener || document.activeElement;
   const lightbox = document.createElement("div");
   lightbox.id = "gf-lightbox-overlay";
   lightbox.className = "gf-lightbox-overlay";
+  lightbox.tabIndex = -1;
   lightbox.setAttribute("role", "dialog");
+  lightbox.setAttribute("aria-modal", "true");
   lightbox.setAttribute("aria-label", "Vollbild Galerie");
   lightbox.innerHTML = `
     <div class="gf-lightbox-backdrop"></div>
     <div class="gf-lightbox-top-bar">
       <div class="gf-lightbox-counter">${images.length > 1 ? `${currentIndex + 1} / ${images.length}` : ""}</div>
-      <button class="gf-lightbox-close-btn" aria-label="Schließen" title="Schließen (Esc)">✕</button>
+      <button type="button" class="gf-lightbox-close-btn" aria-label="Schließen" title="Schließen (Esc)">✕</button>
     </div>
     <div class="gf-lightbox-content">
-      ${images.length > 1 ? `<button class="gf-lightbox-nav-btn gf-lightbox-prev" aria-label="Vorheriges Bild" title="Vorheriges Bild (Pfeiltaste links)">‹</button>` : ""}
+      ${images.length > 1 ? `<button type="button" class="gf-lightbox-nav-btn gf-lightbox-prev" aria-label="Vorheriges Bild" title="Vorheriges Bild (Pfeiltaste links)">‹</button>` : ""}
       <div class="gf-lightbox-img-container">
         <img src="${escapeHtml(images[currentIndex].url)}" class="gf-lightbox-img" alt="${escapeHtml(poi.name || '')}" />
       </div>
-      ${images.length > 1 ? `<button class="gf-lightbox-nav-btn gf-lightbox-next" aria-label="Nächstes Bild" title="Nächstes Bild (Pfeiltaste rechts)">›</button>` : ""}
+      ${images.length > 1 ? `<button type="button" class="gf-lightbox-nav-btn gf-lightbox-next" aria-label="Nächstes Bild" title="Nächstes Bild (Pfeiltaste rechts)">›</button>` : ""}
     </div>
     <div class="gf-lightbox-bottom-bar">
       <div class="gf-lightbox-title">${escapeHtml(poi.name || '')}</div>
-      <div class="gf-lightbox-caption">
-        ${(images[currentIndex].copyright || images[currentIndex].license) ? `Bild: ${escapeHtml(images[currentIndex].copyright || "DZT")} ${images[currentIndex].license ? `(${escapeHtml(images[currentIndex].license)})` : ""}` : ""}
-      </div>
+      <div class="gf-lightbox-caption">${renderGastroImageAttribution(images[currentIndex], "gf-lightbox-image-attribution")}</div>
     </div>
   `;
 
-  if (document.body && typeof document.body.appendChild === "function") {
-    document.body.appendChild(lightbox);
-  }
-  if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(() => lightbox.classList.add("gf-lightbox-open"));
-  } else if (lightbox.classList && lightbox.classList.add) {
-    lightbox.classList.add("gf-lightbox-open");
-  }
+  const lightboxHost = focusOpener && typeof focusOpener.closest === "function"
+    ? focusOpener.closest(".modal")
+    : null;
+  if (lightboxHost && typeof lightboxHost.appendChild === "function") lightboxHost.appendChild(lightbox);
+  else if (document.body && typeof document.body.appendChild === "function") document.body.appendChild(lightbox);
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => lightbox.classList.add("gf-lightbox-open"));
+  else if (lightbox.classList && lightbox.classList.add) lightbox.classList.add("gf-lightbox-open");
 
-  function closeLightbox() {
+  let closed = false;
+  const focusableSelector = "button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
+  function closeLightbox(fromPageLeave = false) {
+    if (closed) return;
+    closed = true;
     if (lightbox.classList && lightbox.classList.remove) lightbox.classList.remove("gf-lightbox-open");
-    if (typeof document !== "undefined" && typeof document.removeEventListener === "function") {
-      document.removeEventListener("keydown", handleKeydown);
+    if (typeof document.removeEventListener === "function") document.removeEventListener("keydown", handleKeydown, true);
+    if (state && state.runtime && state.runtime.lightbox === record) state.runtime.lightbox = null;
+    if (fromPageLeave) {
+      removeParentFocusListeners();
+      if (lightbox && typeof lightbox.remove === "function") lightbox.remove();
+    } else {
+      setTimeout(() => {
+        if (lightbox && lightbox.parentNode && typeof lightbox.remove === "function") lightbox.remove();
+      }, 250);
     }
-    setTimeout(() => {
-      if (lightbox && lightbox.parentNode && typeof lightbox.remove === "function") lightbox.remove();
-    }, 250);
+    if (focusOpener && focusOpener.isConnected !== false && typeof focusOpener.focus === "function") focusOpener.focus();
   }
 
   function updateImage(idx) {
     if (idx < 0) idx = images.length - 1;
     if (idx >= images.length) idx = 0;
     currentIndex = idx;
+    const image = images[currentIndex];
     const imgEl = lightbox.querySelector(".gf-lightbox-img");
     const counterEl = lightbox.querySelector(".gf-lightbox-counter");
     const captionEl = lightbox.querySelector(".gf-lightbox-caption");
-    if (imgEl) imgEl.src = images[currentIndex].url;
+    if (imgEl) imgEl.src = image.url;
     if (counterEl && images.length > 1) counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
-    if (captionEl) {
-      captionEl.textContent = (images[currentIndex].copyright || images[currentIndex].license)
-        ? `Bild: ${images[currentIndex].copyright || "DZT"} ${images[currentIndex].license ? `(${images[currentIndex].license})` : ""}`
-        : "";
+    if (captionEl) captionEl.innerHTML = renderGastroImageAttribution(image, "gf-lightbox-image-attribution");
+  }
+
+  function handleKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeLightbox();
+    } else if (event.key === "ArrowLeft" && images.length > 1) {
+      updateImage(currentIndex - 1);
+    } else if (event.key === "ArrowRight" && images.length > 1) {
+      updateImage(currentIndex + 1);
+    } else if (event.key === "Tab") {
+      const focusable = Array.from(lightbox.querySelectorAll(focusableSelector) || []).filter((element) => !element.disabled);
+      if (!focusable.length) {
+        event.preventDefault();
+        lightbox.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === lightbox)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
   }
 
-  function handleKeydown(e) {
-    if (e.key === "Escape") closeLightbox();
-    else if (e.key === "ArrowLeft" && images.length > 1) updateImage(currentIndex - 1);
-    else if (e.key === "ArrowRight" && images.length > 1) updateImage(currentIndex + 1);
-  }
-
-  if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
-    document.addEventListener("keydown", handleKeydown);
-  }
+  const record = { element: lightbox, opener: focusOpener, close: closeLightbox };
+  lightbox.__gfClose = closeLightbox;
+  if (state && state.runtime) state.runtime.lightbox = record;
+  if (typeof document.addEventListener === "function") document.addEventListener("keydown", handleKeydown, true);
 
   const closeBtn = lightbox.querySelector(".gf-lightbox-close-btn");
-  if (closeBtn && typeof closeBtn.addEventListener === "function") closeBtn.addEventListener("click", closeLightbox);
+  function removeParentFocusListeners() {
+    if (!lightboxHost || typeof lightboxHost.removeEventListener !== "function") return;
+    lightboxHost.removeEventListener("shown.bs.modal", restoreParentFocus);
+    lightboxHost.removeEventListener("hidden.bs.modal", removeParentFocusListeners);
+  }
+  function restoreParentFocus() {
+    removeParentFocusListeners();
+    const target = closed ? focusOpener : closeBtn;
+    if (target && target.isConnected !== false && typeof target.focus === "function") target.focus();
+  }
+  // Bootstrap setzt am Ende seiner Fade-Transition den Fokus erneut auf das Modal.
+  if (lightboxHost && !lightboxHost.__gfShown && typeof lightboxHost.addEventListener === "function") {
+    lightboxHost.addEventListener("shown.bs.modal", restoreParentFocus);
+    lightboxHost.addEventListener("hidden.bs.modal", removeParentFocusListeners);
+  }
+  if (closeBtn && typeof closeBtn.addEventListener === "function") closeBtn.addEventListener("click", () => closeLightbox());
   const backdrop = lightbox.querySelector(".gf-lightbox-backdrop");
-  if (backdrop && typeof backdrop.addEventListener === "function") backdrop.addEventListener("click", closeLightbox);
+  if (backdrop && typeof backdrop.addEventListener === "function") backdrop.addEventListener("click", () => closeLightbox());
   const prevBtn = lightbox.querySelector(".gf-lightbox-prev");
   if (prevBtn && typeof prevBtn.addEventListener === "function") prevBtn.addEventListener("click", () => updateImage(currentIndex - 1));
   const nextBtn = lightbox.querySelector(".gf-lightbox-next");
   if (nextBtn && typeof nextBtn.addEventListener === "function") nextBtn.addEventListener("click", () => updateImage(currentIndex + 1));
+  if (closeBtn && typeof closeBtn.focus === "function") closeBtn.focus();
+  return record;
 }
 
 async function openQrModal(state) {
@@ -2311,7 +2456,8 @@ async function openQrModal(state) {
 
 function openGastroDetailDialog(root, state, opener = null) {
   if (!state) return false;
-  openDetailModal(state, state.selectedId);
+  if (opener && state.runtime) state.runtime.detailOpener = opener;
+  openDetailModal(state, state.selectedId, false, true);
   return true;
 }
 
@@ -2347,7 +2493,6 @@ function closeGastroDetails(state, root = null) {
   state.detail.seq += 1;
   state.detail.busy = false;
   state.detail.error = null;
-  state.detail.retryAt = 0;
   if (state.runtime) state.runtime.detailOpener = null;
   if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus();
   else if (root && root.querySelector) {
@@ -2360,8 +2505,9 @@ function closeGastroDetails(state, root = null) {
 function renderGastroCatalogCard(poi, uid = "gf-catalog", selected = false) {
   const item = poi || {};
   const firstImage = (item.images && item.images[0]) || null;
-  const imgUrl = item.imageUrl || (firstImage && (firstImage.url || firstImage["schema:contentUrl"])) || "";
+  const imgUrl = firstImage && gastroImageIsUsable(firstImage) ? firstImage.url : "";
   const imgAlt = (firstImage && firstImage.title) || item.name || "Gastrofinder-Bild";
+  const imageAttribution = imgUrl ? renderGastroImageAttribution(firstImage, "gf-catalog-image-attribution") : "";
   const name = item.name || "Gastronomiebetrieb";
   const locality = item.city || (item.address && (item.address.locality || item.address.city)) || "";
   const street = item.street || (item.address && item.address.street) || "";
@@ -2388,6 +2534,7 @@ function renderGastroCatalogCard(poi, uid = "gf-catalog", selected = false) {
       `}
       ${distance ? `<span class="gf-catalog-dist-badge">${escapeHtml(distance)}</span>` : ""}
     </div>
+    ${imageAttribution ? `<div class="gf-catalog-photo-credit">${imageAttribution}</div>` : ""}
     <div class="gf-catalog-body">
       <h3 class="gf-catalog-card-title">${escapeHtml(name)}</h3>
       <div class="gf-catalog-meta text-muted small mb-2">${escapeHtml(place)}</div>
@@ -2672,6 +2819,15 @@ function bindGastroShellEvents(root, state) {
   }
 }
 
+function resolveGastroBrandAssetUrl(fileName, location = (typeof window !== "undefined" ? window.location : null)) {
+  const file = String(fileName || "odas-app-icon.svg").replace(/^\/+/, "");
+  const hostname = String(location && location.hostname || "").toLowerCase();
+  const pathname = String(location && location.pathname || "/");
+  const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+  const localAppPath = /^\/app(?:\/|$)/.test(pathname);
+  return `${isLocal && localAppPath ? "../assets" : "assets"}/${file}`;
+}
+
 function resolveGastroAssetUrl(relPath) {
   if (!relPath || relPath.startsWith("http://") || relPath.startsWith("https://") || relPath.startsWith("/")) {
     return relPath;
@@ -2842,7 +2998,7 @@ function updateGastroMarkers(root, state, view = null) {
   for (const poi of current.pois) {
     const selected = poi.id === state.selectedId;
     const firstImage = (poi.images && poi.images[0]) || null;
-    const imgUrl = poi.imageUrl || (firstImage && (firstImage.url || firstImage["schema:contentUrl"])) || "";
+    const imgUrl = firstImage && gastroImageIsUsable(firstImage) ? firstImage.url : "";
     const distance = Number.isFinite(Number(poi.distanceKm))
       ? `${Number(poi.distanceKm).toLocaleString("de-DE", { maximumFractionDigits: 1 })} km`
       : (poi.distanceKm != null ? `${poi.distanceKm} km` : "");
@@ -2885,6 +3041,7 @@ function updateGastroMarkers(root, state, view = null) {
         if (btn) {
           btn.addEventListener("click", () => {
             if (typeof marker.closePopup === "function") marker.closePopup();
+            state.runtime.detailOpener = btn;
             openDetailModal(state, poi.id);
           });
         }
@@ -3075,6 +3232,7 @@ function renderGastroSecondaryPage(page, content) {
 }
 
 function renderPageOverride(page) {
+  syncGastroAppIdentity();
   if (page === "startseite") return null;
   ensureGlobalOffcanvasSetup();
   setTimeout(() => ensureQrNavMenuItem(), 0);
@@ -3111,6 +3269,25 @@ function onPageLeave(page) {
 
 function addToHead() {
   // Die Kartenbibliotheken werden bewusst erst nach der ersten sichtbaren Shell geladen.
+}
+
+function syncGastroAppIdentity() {
+  if (typeof document === "undefined") return;
+  document.body.classList.add("gf-app-themed");
+  const logo = document.getElementById("logo-icon");
+  const src = resolveGastroBrandAssetUrl("odas-app-icon.svg");
+  if (logo) {
+    logo.src = src;
+    logo.alt = "Gastrofinder-App-Logo";
+  }
+  const menuTitle = document.getElementById("offcanvasNavbarLabel");
+  if (menuTitle && !menuTitle.querySelector(".gf-menu-logo")) {
+    const image = document.createElement("img");
+    image.className = "gf-menu-logo";
+    image.src = src;
+    image.alt = "Gastrofinder-App-Logo";
+    menuTitle.prepend(image);
+  }
 }
 
 function ensureGlobalOffcanvasSetup() {

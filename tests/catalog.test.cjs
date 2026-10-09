@@ -31,6 +31,7 @@ function loadGastroScope() {
   const code = fs.readFileSync(path.join(__dirname, "../app/app.js"), "utf8");
   const sandbox = {
     console,
+    URL,
     window: {
       location: { hostname: "test.local", pathname: "/view/test/app/inst1/" },
       bootstrap: {
@@ -92,6 +93,20 @@ test("renderGastroCatalog renders dual actions ('Auf Karte' and 'Details') for e
   assert.ok(!html.includes("btn-primary"), "Must not use Bootstrap btn-primary");
   assert.ok(html.includes("gf-catalog-img") || html.includes("gf-catalog-thumb"), "Must include catalog image container");
   assert.ok(html.includes("Gasthaus Zur Linde"), "Must render POI name");
+});
+
+test("catalog credits are outside the fixed image area and retain complete rights", () => {
+  const scope = loadGastroScope();
+  const credit = "Synthetischer Rechteinhaber ".repeat(16);
+  const image = { url: "https://example.org/photo.svg", credit, licenseUrl: "https://creativecommons.org/licenses/by/4.0/", sourceUrl: "https://example.org/source" };
+  const poi = { id: "https://example.org/long-credit", name: "Demo-Bistro", types: ["https://schema.org/Restaurant"], images: [image] };
+  const html = scope.renderGastroCatalogCard(poi);
+  const imageArea = html.match(/<div class="gf-catalog-img-wrap">([\s\S]*?)<\/div>/)[1];
+  assert.ok(!imageArea.includes("gf-catalog-photo-credit"), "credit must not overflow from the fixed image area");
+  assert.ok(html.includes(credit), "complete rights-party text is retained");
+  assert.ok(html.includes(image.licenseUrl) && html.includes(image.sourceUrl), "licence and source remain linked");
+  assert.ok(html.indexOf("gf-catalog-photo-credit") < html.indexOf("gf-catalog-body"), "credit precedes the card text");
+  assert.ok(!scope.renderGastroCatalogCard({ ...poi, images: [] }).includes("gf-catalog-photo-credit"), "no empty credit area without an image");
 });
 
 test("mobile drawer toggling updates view mode and switcher button state", () => {

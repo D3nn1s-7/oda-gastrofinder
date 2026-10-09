@@ -1,100 +1,153 @@
-# Gastrofinder – Genussatlas Fullscreen
+# Gastrofinder – Genussatlas
 
-Der **Gastrofinder** ist eine regionale Open Data App für Restaurants und Cafés. Die Startseite ist als Fullscreen-Karte mit schwebenden Funktionsleisten, einer einklappbaren Genuss-Cockpit-Säule, Vollbild-Katalog und Hero-Detailansicht gestaltet. Das ODAS-Portal legt Ort und Umkreis fest; Besucherinnen und Besucher sehen nur den geladenen Bestand im konfigurierten Suchgebiet.
+Der **Gastrofinder** erschließt Restaurants und Cafés aus dem DZT Knowledge Graph für kommunale und regionale Portale. Karte, Ergebnisliste, Katalog und Detailansicht beziehen sich auf ein vom Portalbetreiber festgelegtes Suchgebiet.
 
-## Was die App kann
+Die App ist für den [Open Data App Store](https://open-data-app-store.de/) und dessen [Open-Data-App-Spezifikation](https://open-data-apps.github.io/open-data-app-docs/open-data-app-spezifikation/) gemacht. Weitere Apps: [open-data-apps auf GitHub](https://github.com/open-data-apps).
 
-- ausschließlich DZT-Datensätze mit den exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`,
-- Fullscreen-Map mit Leaflet, Marker-Clustering, Suchgebietskreis, Home-/Zoom-Steuerung und Waldgrün-/Kupfer-Semantik,
-- schwebende Brandbar mit Ort, Radius und Portalhinweis,
-- schwebende Aktionen für Katalog, Teilen und ODAS-Menü,
-- einklappbare Cockpit-Säule mit Name-/Ortssuche, Typ-/Küchenfilter, Sortierung, Trefferliste und Nachladen,
-- Vollbild-Katalog mit den aktuell gefilterten Betrieben,
-- Hero-Detaildialog mit Beschreibung, Adresse, Öffnungszeiten, Kontakt, Route, Website und Bildnachweisen,
-- mobile Umschaltung zwischen Karte und vollständiger Ergebnisliste,
-- einheitlich gestaltete Sekundärseiten für Beschreibung, Kontakt, Datenschutz und Impressum,
-- lokale Karten-/Font-Bibliotheken, sichtbare Fokuszustände und `prefers-reduced-motion`.
+## Für wen ist diese App?
 
-Öffnungszeiten sind Angaben der Quelle. Die App berechnet daraus **keine** Live-Anzeige „jetzt geöffnet“ oder „geschlossen“. Fehlende Angaben werden als „nicht angegeben“ ausgewiesen.
+Bürgerinnen, Bürger und Gäste können ohne besondere Datenkenntnisse nach Name, Ort, Küche und Betriebstyp suchen. Der Portalbetreiber konfiguriert Ort und Umkreis; die Besucheransicht bietet keine freie Deutschland- oder GPS-Suche.
 
-## Konfiguration
+## Funktionen
 
-| Schlüssel | Bedeutung |
-|---|---|
-| `ort` | Ort oder Region für die Offline-Ortsauflösung; Paketstandard leer. |
-| `radiusKm` | Umkreis als String aus `5`, `10`, `25`, `50` oder `100`; Paketstandard `25`. |
-| `latitude` / `longitude` | Optionales vollständiges Koordinatenpaar. Es ist nötig, wenn der Ort im Index fehlt oder mehrdeutig ist. |
-| `apiurls.dztsparql` | Benannte DZT-SPARQL-Ressource. |
+- Fullscreen-Karte mit Leaflet, Marker-Clustering, Vorschaupopups und Kartensteuerung.
+- Einklappbares Cockpit mit Textsuche, Restaurant-/Café- und Küchenfiltern sowie Sortierung.
+- Katalog und mobile Umschaltung zwischen Karte und Ergebnisliste.
+- Detaildialog mit separat nachgeladenen Beschreibungen, Öffnungszeiten, Kontakten und Bildern.
+- Bildgalerie mit Tastaturbedienung; getrennte Datensatz- und Bildnachweise.
+- JSON-LD-Ansicht der verwendeten Quelldaten und Kopierfunktion mit Fehlerrückmeldung.
+- QR-Code für die App-Adresse und Seiten für Beschreibung, Kontakt, Datenschutz und Impressum.
 
-Der Portalbetreiber bestimmt das Suchgebiet. Die Besucheransicht bietet keine freie Deutschland- oder GPS-Ortsuche. Für die Auflösung wird ein mitgelieferter deutscher GeoNames-`cities1000`-Auszug verwendet; bei unbekannten oder mehrdeutigen Namen muss das Betreiber-Koordinatenpaar gesetzt werden. Weitere Grenzen stehen in [`app/data/README.md`](app/data/README.md).
+Öffnungszeiten sind Quellenangaben, keine Live-Ampel „jetzt geöffnet“. Eine fehlgeschlagene Detailabfrage ist von fehlenden Angaben unterscheidbar.
 
-## Datenweg und Relay
+## Datenquelle und Grenzen
 
-Im ODAS-Betrieb lädt die App Daten **nicht** direkt vom DZT-Host und nicht über `/odp-data`. Stattdessen verwendet sie den DZT-Relay der App-Instanz:
+Die Abfrage verwendet ausschließlich die exakten Typen `https://schema.org/Restaurant` und `https://schema.org/CafeOrCoffeeShop`. Der Bestand wird nicht anhand von Namensstichwörtern ermittelt.
+
+Die Übersicht lädt höchstens **200 eindeutige Quell-IDs je Seite**. Weitere Seiten werden ausdrücklich nachgeladen. Filter und Zähler beschreiben den geladenen Bestand, nicht sämtliche Gastronomiebetriebe der Region. `assets/schema.json` dokumentiert das normalisierte Darstellungsmodell; die JSON-LD-Ansicht enthält die verwendeten RDF-Tripel und verknüpften Knoten.
+
+Datensatz- und Bildrechte werden getrennt geprüft. Ein Foto ohne eigenen ausreichenden Nachweis wird nicht angezeigt; eine Datensatzlizenz ist keine automatische Bildlizenz. Unterschiedliche Quellen können unterschiedliche Lizenzen und Einschränkungen haben.
+
+### DZT-Relay
 
 ```text
 GET <App-Basispfad>/dzt?path=ts/v1/kg/sparql?query=...
 ```
 
-Der Store setzt den DZT-API-Key serverseitig. Die App enthält keinen API-Key. Die echte Relay-Prüfung (A13) benötigt eine freigegebene Gastrofinder-Zielinstanz und ist nicht durch lokale Fixtures erfüllt.
+Die Runtime kontaktiert den DZT-API-Host **nicht direkt** und verwendet nicht `/odp-data`. Der Store setzt den DZT-Schlüssel serverseitig. In App-Code, lokaler Config und Liefer-ZIP gehört kein Schlüssel.
 
-## Datenmodell und Rechte
+## Konfiguration
 
-`assets/schema.json` beschreibt das normalisierte `GastroPoi`-Modell. Die Übersicht lädt IDs, Typen, Punkt, Adressort, Küche, Lizenz und ein Vorschaubild; Beschreibung, vollständige Adresse, Öffnungszeiten, Kontakt und weitere Bilder werden erst für eine ausgewählte ID angefragt.
+| Schlüssel | Bedeutung |
+|---|---|
+| `ort` | Betreiber-Ort; Paketstandard leer. |
+| `radiusKm` | `5`, `10`, `25`, `50` oder `100` als String; Standard `25`. |
+| `latitude` / `longitude` | Optionales vollständiges Koordinatenpaar; hat Vorrang vor der Ortsauflösung. |
+| `apiurls` → `dztsparql` | Benannte Ressource mit dem kanonischen DZT-SPARQL-Endpunkt. |
+| `urlDaten` | Datensatz-/Portalseite zur Quellenverlinkung. |
+| `titel`, `seitentitel`, `icon` | ODAS-Anzeige-/Brandingwerte. |
+| `beschreibung`, `kontakt`, `impressum`, `datenschutz`, `fusszeile` | Inhalte und Betreiberangaben. |
+| `brandingCSS`, `brandingCSSFile` | Optionales Instanz-Branding. |
 
-Die Datensatzlizenz wird nicht auf Bilder übertragen. Ein Bild erscheint nur mit eigenem nachweisbaren Urheber-/Lizenznachweis. Bibliotheken, Fonts und GeoNames-Lizenz sind lokal dokumentiert in [`app/vendor/THIRD-PARTY.md`](app/vendor/THIRD-PARTY.md), [`app/data/README.md`](app/data/README.md) und den dort genannten Lizenzdateien. Kartenkacheln von OpenStreetMap werden mit Attribution geladen; DZT-Bildhosts sind quellenabhängig und werden im jeweiligen Bildnachweis angezeigt.
+Für die Offline-Ortsauflösung liegt ein GeoNames-`cities1000`-Auszug mit 7.652 deutschen Einträgen (Abruf 2026-10-08) bei. Er ist **kein vollständiges Gemeindeverzeichnis**. Bei unbekannten oder mehrdeutigen Namen sind explizite Koordinaten nötig. [Quelle, Lizenz und Grenzen](app/data/README.md).
 
-## Lokal prüfen
+Die lokale `odas-config/config.json` ist ein Testspiegel. Im Store entsteht die Instanzkonfiguration aus `app-package.json`. Paket-Richtext ist Markdown, lokaler Richtext bereits gerendertes HTML. Es werden keine neuen Instanzfelder für Testdaten benötigt.
 
-Voraussetzung ist eine aktuelle ODAS-/Live-Server-Umgebung. Für die Tests wird die App **nicht** über `localhost` oder `127.0.0.1` aufgerufen, weil `app-base.js` dort den lokalen Config-Zweig verwendet. Das autorisierte ODAS-Testziel ist:
+## Lokal starten und prüfen
 
-```text
-http://odas-dev.invalid:3000
+Voraussetzungen für Tests: **Node.js 22 oder neuer, Python 3, Make und `zip`**. Docker/Compose ist nur für den optionalen Containerstart erforderlich.
+
+### VS Code Live Server
+
+Live Server aus der **Projektwurzel** starten und `http://127.0.0.1:5500/app/` öffnen. Bei abweichender Portkonfiguration den angezeigten Port verwenden. `liveServer.settings.root` bleibt `/`, damit `odas-config/` und `assets/` erreichbar bleiben. Die Base-Dateien werden dafür nicht verändert.
+
+Ohne ODAS-Backend gibt es lokal kein `/dzt`: Der erste Datenabruf kann deshalb erwartungsgemäß einen Relay-Fehler anzeigen. Für die reproduzierbare lokale Bedienprüfung die synthetische Fixture in der Browser-Konsole installieren:
+
+```js
+for (const src of ["../tests/fixtures.js", "../tests/browser-fixtures.js"]) {
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+await installGastroFixture("success");
 ```
 
-Für die nicht veröffentlichte Gastrofinder-Implementierung wurde zusätzlich ein temporärer Nicht-Loopback-Fixture-Host verwendet. Die temporäre `app/config` und der Fixture-Server waren nicht eingecheckt und sind nicht Teil des Lieferumfangs.
+Die Fixture ersetzt ausschließlich die Testantworten und zeigt einen sichtbaren Demo-Hinweis. Vor einem anderen Szenario die Seite neu laden. Weitere Szenarien: [`tests/BROWSER-CHECKS.md`](tests/BROWSER-CHECKS.md). Ein Fixture-Test ist kein Nachweis des echten DZT-Relays.
 
-Vom Projektordner aus:
+### Tests und ZIP
 
 ```bash
-node --check app/app.js
-node --check app/app-base.js
-node --test tests/*.test.cjs
-python3 -m unittest discover -s tests -p 'test_places.py'
-python3 -m json.tool app-package.json >/dev/null
-python3 -m json.tool odas-config/config.json >/dev/null
-python3 -m json.tool assets/schema.json >/dev/null
+make test
+make zip
+```
+
+`make test` prüft Syntax, echte Runtime-Tests, Ortsindex, JSON und die tatsächliche ZIP-Rezeptur in einer temporären Kopie. Es benötigt **kein Nachbarrepository**. Optionaler Portfolio-Linter bei vorhandenem Portfolio-Checkout:
+
+```bash
 python3 ../tools/odas-config-lint/lint.py .
 ```
 
-Die Browser-Fixture ersetzt DZT-Antworten ausschließlich durch synthetische SPARQL-Bindings. Sie ist **kein Live-Nachweis**. Anleitung und Szenarien stehen in [`tests/BROWSER-CHECKS.md`](tests/BROWSER-CHECKS.md); die aktuellen Nachweise liegen in [`tests/evidence/redesign-browser.md`](tests/evidence/redesign-browser.md) und [`tests/evidence/redesign-acceptance.md`](tests/evidence/redesign-acceptance.md).
+`make check-app` ist der unveränderte zusätzliche ODAS-Tools-Aufruf und benötigt separat `../odas-tools/app-check.sh`.
 
-Ein lokaler Aufruf von `/dzt` ohne ODAS-Relay liefert erwartungsgemäß keinen echten DZT-Datensatz. Das ist keine Aussage über die Live-Anbindung.
+### Optional mit Docker
 
-## Paket und Veröffentlichung
-
-- ODAS-Paketformat: `2`
-- API-Version: `1`
-- App-Version: `1.2.1`
-- ZIP-Inhalt: `app/`, `assets/`, `app-package.json` und `CHANGELOG.md`
-- Das Paket ist lokal geprüft.
-- Ein eigenes öffentliches Repository, ein finaler Repository-Link und eine echte ODAS-Zielinstanz sind noch nicht autorisiert.
-- Es wurde keine Live-Instanz gebucht und keine Veröffentlichung behauptet.
-
-## Projektstruktur
-
-```text
-app/app.js                 Fullscreen-Shell, Katalog, Dialog, Lifecycle und Datenlogik
-app/app.css                Genussatlas-Layout, Floating Controls und responsive Zustände
-app/data/                  GeoNames-Index und Lizenzhinweise
-app/vendor/                Bootstrap, Leaflet, MarkerCluster, Fonts und Lizenzen
-assets/schema.json         Frictionless Table Schema
-assets/odas-app-icon.svg   ODAS-Icon
-assets/*_Screenshot.png    synthetisch markierte Redesign-Screenshots
-odas-config/config.json    lokaler Konfigurationsspiegel
-odas-services              nur Tourismus Deutschland
+```bash
+make build up
+# http://localhost:8090
+make down
 ```
 
-## Lizenz- und Nachweisgrenze
+Auch dieser Container stellt selbst keinen DZT-Relay bereit. Die echte DZT-Anbindung wird an einer autorisierten ODAS-Testinstanz geprüft, nicht durch Einbetten eines API-Schlüssels in den lokalen Browser.
 
-Fremde Runtime-Bibliotheken und Fonts behalten ihre jeweiligen Lizenzen. Für DZT-Datensätze und Bilder gelten die in der Quelle bzw. im Datensatz ausgewiesenen Rechte. Der Anbieter der App gibt keine neue Lizenz für fremde Daten oder Bilder an.
+## Beim Aufruf kontaktierte Drittanbieter
+
+Alle Programmbibliotheken und Fonts werden lokal aus `app/vendor/` ausgeliefert, ohne CDN-Anfragen.
+
+- DZT: Browserabruf ausschließlich über das serverseitige `/dzt`-Relay der App-Instanz.
+- `*.tile.openstreetmap.org`: direkte Kartenkachelanfragen; der Kartendienst erhält IP-Adresse und technische Verbindungsangaben.
+- Bildhosts der freigegebenen DZT-Bilder: Vorschaubilder/Fotos können direkt aus dem Browser geladen werden; dabei fallen entsprechende Verbindungsdaten an. Bild- und Quellverweise stehen am Nachweis.
+- Google Maps und Betriebswebsites: erst nach Linkklick. Telefonlinks: erst nach Nutzeraktion.
+
+Es gibt kein Tracking und keine GPS-Abfrage. GeoNames-Ortsauflösung erfolgt offline. Maßgeblich sind ergänzend die Angaben des jeweiligen Portalbetreibers.
+
+## Screenshots
+
+Die sechs Store-Bilder zeigen die Oberfläche mit **gekennzeichneten synthetischen Testdaten**; sie sind kein Nachweis einer Live-Abnahme.
+
+| Ansicht | Übersicht | Katalog | Detail |
+|---|---|---|---|
+| Desktop | ![Desktop – Übersicht](assets/Desktop_Screenshot.png) | ![Desktop – Katalog](assets/Desktop_Screenshot_2.png) | ![Desktop – Detail](assets/Desktop_Screenshot_3.png) |
+| Mobile | ![Mobile – Übersicht](assets/Mobile_Screenshot.png) | ![Mobile – Katalog](assets/Mobile_Screenshot_2.png) | ![Mobile – Detail](assets/Mobile_Screenshot_3.png) |
+
+[Bildnachweise](assets/SCREENSHOTS.md).
+
+Die Bedienpalette ist einheitlich: Grün für Aktionen, Links und Navigation; Braun nur zur Café-Kennzeichnung. Katalog-Bildnachweise stehen separat unter dem Bild und bleiben auch bei langen Credits vollständig zugänglich. Sekundärseiten und Menükopf verwenden das Gastrofinder-App-Logo; die gespeicherte Portal-Logo-Konfiguration wird dafür nicht verändert.
+
+Historischer [Prüfnachweis zum Runtime-Stand 1.2.3](tests/evidence/release-readiness-2026-10-08.md), erstellt vor dem Screenshot-Metadatenupdate.
+
+## Lieferung und Projektstruktur
+
+- App-Version: **1.2.6** (Katalog-Rechtebereich, einheitliches App-Logo und grüne Bedienzustände; Daten- und Detailabruf unverändert); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
+- `make zip` erzeugt jedes Mal ein **neues** `oda-gastrofinder.zip`, damit entfernte Dateien nicht im Archiv überleben.
+- Lieferumfang: `app/`, `assets/`, `app-package.json`, `CHANGELOG.md`, `LICENSE`.
+- `tests/`, `tools/`, `odas-config/` und Entwicklungsnachweise sind nicht Teil des ZIPs.
+- ZIPs werden nicht ins Git eingecheckt.
+
+| Pfad | Inhalt |
+|---|---|
+| `app/app.js`, `app/app.css` | Fachlogik und Oberfläche |
+| `app/app-base.*`, `app/index.html` | Unveränderte gemeinsame ODAS-Runtime |
+| `app/data/` | Offline-Ortsindex und GeoNames-Nachweise |
+| `app/vendor/` | Gebündelte Bibliotheken, Fonts und Lizenztexte |
+| `assets/` | Schema, Fachicon, Branding und aktuelle Storebilder |
+| `tests/`, `tools/` | Runtime-/Datentests und Bauprüfung |
+
+Vorgesehener Repositorypfad: [open-data-apps/oda-gastrofinder](https://github.com/open-data-apps/oda-gastrofinder). Das Erstellen/Pushen dieses Repositories ist ein eigener Veröffentlichungsschritt. Historische Dev-Portal-Tests sind dokumentiert; sie ersetzen keine Prüfung einer später geänderten Version.
+
+## Lizenz
+
+Eigener App-Code: **MIT**, © 2026 Ondics GmbH, siehe [LICENSE](LICENSE). Fremde Bibliotheken und Fonts: [THIRD-PARTY.md](app/vendor/THIRD-PARTY.md). GeoNames: CC BY 4.0 mit eigenem Nachweis. Für DZT-Daten und Fotos gelten die objektbezogenen Quellrechte; die Softwarelizenz überträgt keine fremden Daten-/Bildrechte.

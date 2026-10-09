@@ -3,36 +3,35 @@
   "app-entwickler-name": "ondics-gmbh",
   "name-in-url": "gastrofinder",
   "name": "Gastrofinder",
-  "app-version": "1.2.1",
+  "app-version": "1.2.6",
   "app-package-version": "2",
   "odas-app-icon": "assets/odas-app-icon.svg",
   "app-icon": "assets/odas-app-icon.svg",
   "kurzbeschreibung": "Fullscreen-Gastrofinder mit Karte, schwebendem Cockpit, Vollbild-Katalog, Hero-Detaildialog und einheitlichen Sekundärseiten.",
   "beschreibung": [
     "_multiline_",
-    "Der Gastrofinder ist ein regionaler Restaurant- und Caféfinder für kommunale Portale. Seine Startseite ist als Fullscreen-Karte mit schwebender Genuss-Cockpit-Säule gestaltet; ein Vollbild-Katalog, eine Hero-Detailansicht und einheitliche Sekundärseiten führen durch die geladenen Betriebe.",
-    "Für wen ist diese App? Bürgerinnen, Bürger und Gäste können ohne Datenwissen nach Name, Ort, Typ oder vorhandenen Küchenangaben suchen. Die Betreiberin bzw. der Betreiber legt Ort und Umkreis fest; Besucherinnen und Besucher ändern das Suchgebiet nicht.",
+    "Der Gastrofinder erschließt Restaurants und Cafés aus dem DZT Knowledge Graph für kommunale Portale. Karte, Ergebnisliste, Katalog und Detaildialog zeigen den geladenen Bestand eines vom Portal festgelegten Suchgebiets.",
+    "Für wen ist diese App? Bürgerinnen, Bürger und Gäste finden ohne besondere Datenkenntnisse Betriebe nach Name, Ort, Küche und Typ. Ort und Umkreis werden vom Portalbetreiber festgelegt.",
     "",
     "## Methodik",
     "",
-    "Die App berücksichtigt ausschließlich Datensätze mit den exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`. Eine Klassifikation anhand von Namen oder Beschreibungsstichwörtern findet nicht statt. Die Fullscreen-Karte, die einklappbare Cockpit-Säule, der Vollbild-Katalog und die Hero-Detailansicht verwenden denselben normalisierten State; Filter, Auswahl und Teilbestände bleiben synchron. Die Übersicht lädt höchstens 200 eindeutige Quell-IDs pro Seite. Detailangaben werden erst für die ausgewählte ID ergänzt. Öffnungszeiten sind Quellenangaben und keine Live-Ampel; fehlende Angaben werden als nicht angegeben ausgewiesen.",
-    "Fotos erscheinen nur mit eigenem nachweisbaren Rechtsstatus. Die Datensatzlizenz wird nicht automatisch auf Bilder übertragen. Datensätze ohne belegte anwendbare Rechte oder mit ungeklärten Geometrien werden für diese App nicht veröffentlicht.",
+    "Die Abfrage berücksichtigt ausschließlich die exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`. Sie lädt höchstens 200 eindeutige Quell-IDs je Seite; weitere Seiten werden ausdrücklich nachgeladen. Filter gelten für den bereits geladenen Bestand und beanspruchen keine Vollständigkeit des regionalen Gastronomieangebots.",
+    "Beschreibung, Öffnungszeiten und weitere Detailangaben werden beim Öffnen eines Betriebs nachgeladen. Öffnungszeiten sind Quellenangaben, keine Live-Anzeige „jetzt geöffnet“. Fehlende Angaben werden erst nach erfolgreichem Detailabruf als nicht angegeben ausgewiesen.",
+    "Datensatz- und Bildrechte werden getrennt geprüft und angezeigt. Bilder ohne eigenen ausreichenden Rechtsnachweis werden nicht dargestellt. Die Rohdatenansicht bildet die verwendeten RDF-Tripel als JSON-LD ab.",
     "",
     "## Datenquelle",
     "",
-    "Die App liest den [Open Data Germany Knowledge Graph](https://open-data-germany.org/) und nutzt den konfigurierten SPARQL-Endpunkt. Der Abruf läuft im ODAS-Betrieb über das serverseitig abgesicherte DZT-Relay der App-Instanz.",
     "- **Open Data Portal:** [Open Data Germany](https://open-data-germany.org/)",
-    "- **Datensatz:** [DZT Knowledge Graph](https://open-data-germany.org/)",
-    "- **Ressource:** [DZT SPARQL-Endpunkt](https://proxy.opendatagermany.io/api/ts/v1/kg/sparql)",
+    "- **Datensatz:** [DZT Knowledge Graph]({{{appinstanz.urlDaten}}})",
+    "- **Ressource:** [DZT SPARQL-Endpunkt]({{{appinstanz.apiurls.1}}})",
     "",
-    "Die Ressource ist authentifiziert und nicht als direkter Browser-Endpunkt gedacht. Die App verwendet deshalb `App-Basispfad/dzt?path=...`; der DZT-Schlüssel bleibt im Store. Kartenkacheln kommen von OpenStreetMap. Bildhosts sind quellenabhängig und werden im jeweiligen Bildnachweis sichtbar gemacht.",
+    "Der authentifizierte DZT-Endpunkt wird ausschließlich über das serverseitige `/dzt`-Relay der ODAS-App-Instanz verwendet. Der DZT-Schlüssel bleibt im Store. Der lokale GeoNames-Ortsindex ist keine vollständige Gemeindereferenz; bei fehlendem oder mehrdeutigem Ort sind Betreiberkoordinaten erforderlich.",
     "",
     "## Open Data App",
     "",
-    "Diese App gehört zum [Open Data App Store](https://open-data-app-store.de/). Sie ist als Open Data App für kommunale und regionale Informationsangebote gedacht.",
-    "- [Open Data App Store](https://open-data-app-store.de/) – Plattform für Open Data Apps",
-    "- [Open Data Apps auf GitHub](https://github.com/open-data-apps) – Organisation und weitere Apps",
-    "- Repository: Die App ist lokal geprüft; ein eigenes öffentliches Repository und ein finaler Repository-Link sind noch nicht freigegeben."
+    "- [Open Data App Store](https://open-data-app-store.de/)",
+    "- [Open Data Apps auf GitHub](https://github.com/open-data-apps)",
+    "- [Repository und Dokumentation](https://github.com/open-data-apps/oda-gastrofinder)"
   ],
   "tags-funktion": [
     "Karte",
@@ -51,7 +50,11 @@
   ],
   "screenshots": [
     "assets/Desktop_Screenshot.png",
-    "assets/Mobile_Screenshot.png"
+    "assets/Desktop_Screenshot_2.png",
+    "assets/Desktop_Screenshot_3.png",
+    "assets/Mobile_Screenshot.png",
+    "assets/Mobile_Screenshot_2.png",
+    "assets/Mobile_Screenshot_3.png"
   ],
   "daten": {
     "beschreibung": "Die App normalisiert SPARQL-Bindings des DZT Knowledge Graph zu regionalen Restaurant- und Café-Betrieben. Die Lizenz- und Bildnachweise bleiben objektbezogen erhalten.",
@@ -61,9 +64,7 @@
   },
   "branding-css": "",
   "api-version": "1",
-  "odas-services": [
-    "tourismus-deutschland"
-  ],
+  "odas-services": ["tourismus-odg"],
   "instanz-config": {
     "seitentitel": {
       "label": "Seitentitel",
@@ -121,29 +122,28 @@
       "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Über diese App angezeigt.",
       "default": [
         "_multiline_",
-        "Der Gastrofinder ist ein regionaler Restaurant- und Caféfinder für kommunale Portale. Seine Startseite ist als Fullscreen-Karte mit schwebender Genuss-Cockpit-Säule gestaltet; ein Vollbild-Katalog, eine Hero-Detailansicht und einheitliche Sekundärseiten führen durch die geladenen Betriebe.",
-        "Für wen ist diese App? Bürgerinnen, Bürger und Gäste können ohne Datenwissen nach Name, Ort, Typ oder vorhandenen Küchenangaben suchen. Die Betreiberin bzw. der Betreiber legt Ort und Umkreis fest; Besucherinnen und Besucher ändern das Suchgebiet nicht.",
+        "Der Gastrofinder erschließt Restaurants und Cafés aus dem DZT Knowledge Graph für kommunale Portale. Karte, Ergebnisliste, Katalog und Detaildialog zeigen den geladenen Bestand eines vom Portal festgelegten Suchgebiets.",
+        "Für wen ist diese App? Bürgerinnen, Bürger und Gäste finden ohne besondere Datenkenntnisse Betriebe nach Name, Ort, Küche und Typ. Ort und Umkreis werden vom Portalbetreiber festgelegt.",
         "",
         "## Methodik",
         "",
-        "Die App berücksichtigt ausschließlich Datensätze mit den exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`. Eine Klassifikation anhand von Namen oder Beschreibungsstichwörtern findet nicht statt. Die Fullscreen-Karte, die einklappbare Cockpit-Säule, der Vollbild-Katalog und die Hero-Detailansicht verwenden denselben normalisierten State; Filter, Auswahl und Teilbestände bleiben synchron. Die Übersicht lädt höchstens 200 eindeutige Quell-IDs pro Seite. Detailangaben werden erst für die ausgewählte ID ergänzt. Öffnungszeiten sind Quellenangaben und keine Live-Ampel; fehlende Angaben werden als nicht angegeben ausgewiesen.",
-        "Fotos erscheinen nur mit eigenem nachweisbaren Rechtsstatus. Die Datensatzlizenz wird nicht automatisch auf Bilder übertragen. Datensätze ohne belegte anwendbare Rechte oder mit ungeklärten Geometrien werden für diese App nicht veröffentlicht.",
+        "Die Abfrage berücksichtigt ausschließlich die exakten schema.org-Typen `Restaurant` und `CafeOrCoffeeShop`. Sie lädt höchstens 200 eindeutige Quell-IDs je Seite; weitere Seiten werden ausdrücklich nachgeladen. Filter gelten für den bereits geladenen Bestand und beanspruchen keine Vollständigkeit des regionalen Gastronomieangebots.",
+        "Beschreibung, Öffnungszeiten und weitere Detailangaben werden beim Öffnen eines Betriebs nachgeladen. Öffnungszeiten sind Quellenangaben, keine Live-Anzeige „jetzt geöffnet“. Fehlende Angaben werden erst nach erfolgreichem Detailabruf als nicht angegeben ausgewiesen.",
+        "Datensatz- und Bildrechte werden getrennt geprüft und angezeigt. Bilder ohne eigenen ausreichenden Rechtsnachweis werden nicht dargestellt. Die Rohdatenansicht bildet die verwendeten RDF-Tripel als JSON-LD ab.",
         "",
         "## Datenquelle",
         "",
-        "Die App liest den [Open Data Germany Knowledge Graph](https://open-data-germany.org/) und nutzt den konfigurierten SPARQL-Endpunkt. Der Abruf läuft im ODAS-Betrieb über das serverseitig abgesicherte DZT-Relay der App-Instanz.",
         "- **Open Data Portal:** [Open Data Germany](https://open-data-germany.org/)",
-        "- **Datensatz:** [DZT Knowledge Graph](https://open-data-germany.org/)",
-        "- **Ressource:** [DZT SPARQL-Endpunkt](https://proxy.opendatagermany.io/api/ts/v1/kg/sparql)",
+        "- **Datensatz:** [DZT Knowledge Graph]({{{appinstanz.urlDaten}}})",
+        "- **Ressource:** [DZT SPARQL-Endpunkt]({{{appinstanz.apiurls.1}}})",
         "",
-        "Die Ressource ist authentifiziert und nicht als direkter Browser-Endpunkt gedacht. Die App verwendet deshalb `App-Basispfad/dzt?path=...`; der DZT-Schlüssel bleibt im Store. Kartenkacheln kommen von OpenStreetMap. Bildhosts sind quellenabhängig und werden im jeweiligen Bildnachweis sichtbar gemacht.",
+        "Der authentifizierte DZT-Endpunkt wird ausschließlich über das serverseitige `/dzt`-Relay der ODAS-App-Instanz verwendet. Der DZT-Schlüssel bleibt im Store. Der lokale GeoNames-Ortsindex ist keine vollständige Gemeindereferenz; bei fehlendem oder mehrdeutigem Ort sind Betreiberkoordinaten erforderlich.",
         "",
         "## Open Data App",
         "",
-        "Diese App gehört zum [Open Data App Store](https://open-data-app-store.de/). Sie ist als Open Data App für kommunale und regionale Informationsangebote gedacht.",
-        "- [Open Data App Store](https://open-data-app-store.de/) – Plattform für Open Data Apps",
-        "- [Open Data Apps auf GitHub](https://github.com/open-data-apps) – Organisation und weitere Apps",
-        "- Repository: Die App ist lokal geprüft; ein eigenes öffentliches Repository und ein finaler Repository-Link sind noch nicht freigegeben."
+        "- [Open Data App Store](https://open-data-app-store.de/)",
+        "- [Open Data Apps auf GitHub](https://github.com/open-data-apps)",
+        "- [Repository und Dokumentation](https://github.com/open-data-apps/oda-gastrofinder)"
       ],
       "format": {
         "typ": "markdown"
@@ -180,11 +180,19 @@
       "hilfe": "Der Markdown-Inhalt wird im Menüpunkt Datenschutz angezeigt.",
       "default": [
         "_multiline_",
-        "Der Browser lädt Daten über die jeweilige ODAS-App-Instanz. Für den DZT-Zugriff verwendet die App das DZT-Relay der Instanz; der DZT-Schlüssel bleibt serverseitig im Store. Die App speichert keine personenbezogenen Daten und verwendet weder Tracking noch GPS-Ortung.",
+        "Die App verwendet kein Tracking und fragt keinen GPS-Standort ab. Maßgeblich sind ergänzend die Datenschutzangaben des jeweiligen Portalbetreibers.",
         "",
-        "Die Kartenkacheln werden von OpenStreetMap geladen. DZT-Bildhosts sind quellenabhängig; der konkrete Host wird bei einem Bild im Bildnachweis angezeigt. Website-, Routing- und Telefonlinks öffnen externe Ziele erst durch Nutzeraktion. Manrope, Fraunces, Leaflet, MarkerCluster und Bootstrap werden lokal aus der App ausgeliefert.",
+        "Alle für die Darstellung benötigten Programmbibliotheken und Schriftarten werden mit der App aus `app/vendor/` ausgeliefert; dafür werden keine externen Bibliotheksserver kontaktiert.",
         "",
-        "Der mitgelieferte GeoNames-Ortsindex dient nur der Offline-Auflösung des konfigurierten Ortes. Weitere Informationen zu Herkunft und Lizenz stehen in app/data/README.md und app/data/LICENSE-GeoNames-CC-BY-4.0.txt."
+        "DZT-Daten werden ausschließlich über das `/dzt`-Relay der ODAS-App-Instanz geladen. Der DZT-API-Schlüssel bleibt im Store. Der Browser sendet dabei keine direkte DZT-API-Anfrage.",
+        "",
+        "Beim Aufruf kontaktierte Drittanbieter:",
+        "- **OpenStreetMap (`*.tile.openstreetmap.org`):** Kartenkacheln werden direkt aus dem Browser geladen. Dabei erhält der Kartendienst die IP-Adresse und technische Angaben der Verbindung.",
+        "- **Bildanbieter der angezeigten DZT-Datensätze:** Freigegebene Vorschaubilder und Fotos können automatisch von ihren jeweiligen Bildhosts geladen werden. Auch diese Anbieter erhalten die IP-Adresse und technische Angaben der Verbindung. Die konkreten Bild- und Quellverweise sind am Bildnachweis erreichbar.",
+        "",
+        "Externe Websites und Routenplaner (Google Maps) werden erst nach einem Linkklick geöffnet; Telefonlinks werden erst auf Nutzeraktion an die Telefonanwendung übergeben.",
+        "",
+        "Die Offline-Ortsauflösung verwendet einen mitgelieferten GeoNames-Auszug; [Herkunft und Grenzen](data/README.md) sowie [Lizenztext](data/LICENSE-GeoNames-CC-BY-4.0.txt) liegen der App bei."
       ],
       "format": {
         "typ": "markdown"

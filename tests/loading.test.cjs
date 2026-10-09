@@ -25,7 +25,7 @@ test("Loading Overlay: renderGastroShell includes glassmorphic loading overlay",
     "renderGastroShell must include .gf-loading-spinner-ring"
   );
   assert.ok(
-    shellBody.includes("assets/odas-app-icon.svg"),
+    shellBody.includes('resolveGastroBrandAssetUrl("odas-app-icon.svg")'),
     "loading overlay must show Gourmet app icon"
   );
 });

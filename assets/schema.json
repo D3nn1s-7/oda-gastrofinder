@@ -18,7 +18,8 @@
     {"name":"description","title":"Beschreibung","type":"string","description":"Sicher aufbereiteter Quelltext; vor Detailanreicherung leer."},
     {"name":"openingHours","title":"Öffnungszeiten","type":"array","description":"Quellenangaben mit Tagen, Intervallen und Gültigkeitszeitraum; keine Live-Berechnung."},
     {"name":"websites","title":"Websites","type":"array","description":"Sichere HTTP(S)-Links."},
-    {"name":"telephones","title":"Telefonnummern","type":"array","description":"Erlaubte Telefonangaben für sichere tel:-Links."}
+    {"name":"telephones","title":"Telefonnummern","type":"array","description":"Erlaubte Telefonangaben für sichere tel:-Links."},
+    {"name":"raw","title":"Verwendete Quelldaten","type":"object","description":"JSON-LD mit @graph aus den tatsächlich verwendeten RDF-Tripeln, einschließlich verknüpfter Knoten und RDF-Term-Metadaten."}
   ],
   "missingValues": [""]
 }
