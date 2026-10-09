@@ -2638,7 +2638,6 @@ body.gf-app-themed .gf-dataset-license a {
   border-left: 1px solid var(--gf-line) !important;
   box-shadow: -12px 0 36px rgba(32, 53, 42, 0.16) !important;
   width: 320px !important;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 #offcanvasNavbar .offcanvas-header {

@@ -80,6 +80,12 @@ Die Fixture ersetzt ausschließlich die Testantworten und zeigt einen sichtbaren
 
 ### Tests und ZIP
 
+Die Menütransition lässt sich mit einer vorhandenen Playwright-/Chrome-Installation zusätzlich prüfen (keine zusätzliche App-Abhängigkeit):
+
+```bash
+PLAYWRIGHT_MODULE=/pfad/zur/playwright-installation node --test tests/menu-motion.browser.cjs
+```
+
 ```bash
 make test
 make zip
@@ -131,7 +137,7 @@ Historischer [Prüfnachweis zum Runtime-Stand 1.2.3](tests/evidence/release-read
 
 ## Lieferung und Projektstruktur
 
-- App-Version: **1.2.6** (Katalog-Rechtebereich, einheitliches App-Logo und grüne Bedienzustände; Daten- und Detailabruf unverändert); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
+- App-Version: **1.2.7** (native Menüanimation und reduzierte Bewegung; Katalog-Rechtebereich, einheitliches App-Logo und grüne Bedienzustände bleiben erhalten); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
 - `make zip` erzeugt jedes Mal ein **neues** `oda-gastrofinder.zip`, damit entfernte Dateien nicht im Archiv überleben.
 - Lieferumfang: `app/`, `assets/`, `app-package.json`, `CHANGELOG.md`, `LICENSE`.
 - `tests/`, `tools/`, `odas-config/` und Entwicklungsnachweise sind nicht Teil des ZIPs.
