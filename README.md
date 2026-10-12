@@ -122,7 +122,7 @@ Es gibt kein Tracking und keine GPS-Abfrage. GeoNames-Ortsauflösung erfolgt off
 
 ## Screenshots
 
-Die sechs Store-Bilder zeigen die Oberfläche mit **gekennzeichneten synthetischen Testdaten**; sie sind kein Nachweis einer Live-Abnahme.
+Die sechs Store-Bilder zeigen den Dokumentationsstand der App-Version **1.2.7**, aufgenommen am **2026-10-12** mit **gekennzeichneten synthetischen Testdaten** (keine realen DZT-Livedaten); sie sind kein Nachweis einer Live-Abnahme. Desktop und Mobile zeigen dieselben drei Motive; der separate 28-Pixel-Hinweisrand ist nicht Teil der App-Oberfläche.
 
 | Ansicht | Übersicht | Katalog | Detail |
 |---|---|---|---|

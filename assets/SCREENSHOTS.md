@@ -1,6 +1,6 @@
-# Store-Screenshots – 2026-10-09
+# Store-Screenshots – 2026-10-12
 
-Sechs aktuelle Bilder der App-Version **1.2.6**, jeweils Übersicht, Katalog und Detailansicht. Aufgenommen mit der unveränderten App-Laufzeit in Google Chrome über lokalen Live Server; Schriften, sichtbare Bilder und Kartenkacheln waren geladen und endliche Oberflächenanimationen beendet. Keine Live-Abnahme und keine realen Betriebsempfehlungen.
+Sechs aktuelle Bilder der App-Version **1.2.7**, jeweils Übersicht, Katalog und Detailansicht. Die Desktop- und Mobile-Aufnahmen zeigen dieselben drei Motive. Aufgenommen in Google Chrome über DevTools/CDP und lokalen Live Server; Schriften und sichtbare Bilder/Kartenkacheln geladen, echte endliche Übergänge vollständig abgewartet. Sie dokumentieren die unveränderte App-Laufzeit mit synthetischen Testdaten, keine realen DZT-Livedaten und keine Live-Abnahme oder Produktions-/Veröffentlichungsfreigabe.
 
 | Motiv | Desktop | Mobile |
 |---|---|---|
@@ -10,7 +10,7 @@ Sechs aktuelle Bilder der App-Version **1.2.6**, jeweils Übersicht, Katalog und
 
 - Browserfläche: Desktop **1440 × 1000**, Mobile **390 × 844** Pixel, ohne zusätzliche Instanz-Brandingdatei.
 - PNG-Größe: Desktop **1440 × 1028**, Mobile **390 × 872** Pixel. Der zusätzliche 28-Pixel-Rand kennzeichnet **„Synthetische Demodaten · keine Live-Daten“** außerhalb der App; er verdeckt weder Kopfzeilen noch Bedienelemente und ist kein Bestandteil der App-Oberfläche.
-- Daten / Bildmaterial: `tests/fixtures/photo.svg` und kontrollierte synthetische SPARQL-Antworten mit zwölf Demo-Bistros/-Cafés.
+- Daten / Bildmaterial: `tests/fixtures/photo.svg` und kontrollierte synthetische SPARQL-Testantworten mit zwölf Demo-Bistros/-Cafés; keine DZT-Livedaten und keine kopierten Betriebsfotos.
 - Oberfläche und eigene Testillustration: eigener App-Code bzw. eigene Grafik, MIT, © 2026 Ondics GmbH. Keine fremden Betriebsfotos übernommen.
 - In synthetischen Testdatensätzen dargestellte Namen, Angaben und Rechtsnachweise sind Beispieldaten, keine Rechtsauskunft zu realen DZT-Datensätzen oder Fotografien.
 - Soweit sichtbar: Kartenmaterial von OpenStreetMap; © [OpenStreetMap-Mitwirkende](https://www.openstreetmap.org/copyright). Die Software-MIT-Lizenz hebt Rechte und Bedingungen des Kartenmaterials nicht auf.

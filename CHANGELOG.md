@@ -3,6 +3,7 @@
 ## 1.2.7 - 2026-10-09
 - FIX: Burger-Menü verwendet die native Bootstrap-Transition statt einer abrupt anlaufenden eigenen Kurve; reduzierte Bewegung wird nicht mehr durch `!important` überschrieben.
 - TEST: Opt-in-Browserregression für native Menütransition und reduzierte Bewegung ergänzt.
+- DOC: Finaler Screenshot-Dokumentationsstand vom 2026-10-12 (sechs synthetische Bilder, drei Motive, Desktop/Mobile); keine DZT-Livedaten, keine Live-Abnahme und keine Produktions- oder Veröffentlichungsfreigabe.
 
 ## 1.2.6 - 2026-10-09
 - FIX: Katalog-Bildnachweise haben einen eigenen umbrechenden Bereich; lange Credits und Lizenzlinks überlagern keine Betriebsangaben mehr.
