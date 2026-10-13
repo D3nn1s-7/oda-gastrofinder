@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.8 - 2026-10-13
+- ENH: Datenvertrag `assets/datenvertraege.json` für die Store-Datenprüfung: die DZT-Quelle `dztsparql` ist ausdrücklich von der Frictionless-Prüfung ausgenommen (`daten.pruefung`).
+
 ## 1.2.7 - 2026-10-09
 - FIX: Burger-Menü verwendet die native Bootstrap-Transition statt einer abrupt anlaufenden eigenen Kurve; reduzierte Bewegung wird nicht mehr durch `!important` überschrieben.
 - TEST: Opt-in-Browserregression für native Menütransition und reduzierte Bewegung ergänzt.
