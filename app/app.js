@@ -265,10 +265,148 @@ function safeHttpUrl(value) {
   try {
     const parsed = new URL(text);
     if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) return "";
-    return parsed.href;
+    return text;
   } catch (_error) {
     return "";
   }
+}
+
+function isKeineDatenquelleKonfiguriert(targetUrl) {
+  const quelle = String(targetUrl || "").trim();
+  return !quelle || /^\{\{.*\}\}$/.test(quelle) || /^<.*>$/.test(quelle);
+}
+
+// var statt const: app.js muss ohne Lexical-Kollision zweimal ladbar sein.
+var TYP_BEZEICHNUNG = {
+  "ckan-dkan-ds": "Tabellen-API mit Daten-ID",
+  "ckan-ps": "Datensatz-API",
+  "ckan-dl": "Datei-Download",
+  "ods21": "Open-Data-Suche (API v2.1)",
+  "wfs": "Kartendienst (WFS)",
+  "sparql": "Wissensdatenbank (SPARQL)",
+  "csv-zip": "Statische Datei"
+}
+
+function validateUrlTypErwartung(url, erwarteterTyp) {
+  const u = String(url || "");
+  if (!erwarteterTyp || isKeineDatenquelleKonfiguriert(u)) return null;
+  const checks = {
+    "ckan-dkan-ds": /\/api\/3\/action\/datastore_search\?resource_id=/i,
+    "ckan-ps": /\/api\/3\/action\/package_show\?id=/i,
+    "ckan-dl": /\/dataset\/.*\/resource\/.*\/download\//i,
+    "ods21": /\/api\/explore\/v2\.1\//i,
+    "wfs": /service=WFS/i,
+    "sparql": /\/api\/ts\/v1\/kg\/sparql/i,
+    "csv-zip": /\.(csv|json|zip)(\?|$)/i
+  };
+  const re = checks[erwarteterTyp];
+  if (!re) return null;
+  if (!re.test(u)) {
+    const soll = TYP_BEZEICHNUNG[erwarteterTyp] || erwarteterTyp;
+    return `Typ passt nicht: erwartet „${soll}", erhalten „${u.slice(0, 60)}…". Prüfen Sie den Hilfe-Tooltip bei „URLs zu Datenressourcen".`;
+  }
+  return null;
+}
+
+function classifyOdasFehler(error, kontext = {}) {
+  const msg = String((error && error.message) || error || "");
+  const url = String(kontext.url || "");
+  const label = String(kontext.label || "Datenressource");
+  const typLabel = String(kontext.typLabel || TYP_BEZEICHNUNG[kontext.erwarteterTyp] || "Datenquelle");
+  if (/Keine Datenquelle konfiguriert/i.test(msg) || isKeineDatenquelleKonfiguriert(url)) {
+    return {
+      kind: "KEINE_QUELLE",
+      titel: "Es ist keine Datenquelle konfiguriert.",
+      hinweis: `Prüfen Sie unter „URLs zu Datenressourcen → ${label}" ob eine gültige ${typLabel}-URL eingetragen ist (Hilfe-Tooltip beachten).`,
+      detail: msg,
+      alertClass: "alert-info"
+    };
+  }
+  if (/Typ passt nicht: erwartet/i.test(msg)) {
+    return {
+      kind: "TYP_MISMATCH",
+      titel: msg,
+      hinweis: `Diese App erwartet ${typLabel}. Korrigieren Sie die URL gemäß Hilfe-Tooltip (Beispiel dort).`,
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  if (/URL origin not allowed/i.test(msg)) {
+    return {
+      kind: "PROXY_ORIGIN",
+      titel: "ODAS-Proxy blockiert: Ziel-Origin nicht freigegeben.",
+      hinweis: "Tragen Sie die Ziel-Origin als eigenen Eintrag unter „URLs zu Datenressourcen“ ein oder prüfen Sie proxyAktiv.",
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  if (/ODAS-Proxy-Fehler/i.test(msg) || /kein content-String/i.test(msg)) {
+    return {
+      kind: "PROXY_HTTP",
+      titel: msg,
+      hinweis: "Prüfen Sie proxyAktiv und Erreichbarkeit im ODAS-Live-System (lokal 404 ist normal).",
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  if (/Direkter Datenabruf fehlgeschlagen/i.test(msg) || /Failed to fetch/i.test(msg)) {
+    const corsHint = /Failed to fetch/i.test(msg) ? " – vermutlich CORS blockiert → im ODAS-Live proxyAktiv=ja." : "";
+    return {
+      kind: "DIREKT_CORS_HTTP",
+      titel: msg,
+      hinweis: `Prüfen Sie URL und CORS der Quelle${corsHint}`,
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  if (/liefert kein JSON/i.test(msg) || /HTML-Seite|CSV-|leere Antwort|unlesbaren/i.test(msg)) {
+    return {
+      kind: "PAYLOAD_TYP",
+      titel: msg,
+      hinweis: "Tragen Sie den passenden Endpunkt ein – nicht die Datensatzseite (/dataset/…) – Hilfe-Tooltip beachten.",
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  if (/CKAN.*Fehler|success:false/i.test(msg)) {
+    return {
+      kind: "CKAN_API",
+      titel: msg,
+      hinweis: "Prüfen Sie Daten-ID / Datensatz-ID (existiert die Tabelle/Datei noch auf dem Portal?).",
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  if (/404|Nicht gefunden/i.test(msg)) {
+    return {
+      kind: "HTTP_404",
+      titel: msg,
+      hinweis: "Ressource/Datensatz auf dem Portal nicht gefunden (404).",
+      detail: msg,
+      alertClass: "alert-danger"
+    };
+  }
+  return {
+    kind: "UNBEKANNT",
+    titel: msg || "Unbekannter Fehler beim Laden.",
+    hinweis: "Prüfen Sie Konfiguration und Erreichbarkeit der Quelle.",
+    detail: msg,
+    alertClass: "alert-danger"
+  };
+}
+
+function renderOdasFehler(container, error, kontext = {}) {
+  if (!container) return;
+  const typWarn = validateUrlTypErwartung(kontext.url, kontext.erwarteterTyp);
+  if (typWarn && !/Typ passt nicht/i.test(String(error && error.message))) {
+    error = new Error(typWarn);
+  }
+  const info = classifyOdasFehler(error, kontext);
+  const url = String(kontext.url || "");
+  const urlZeile = url ? `<p class="mb-1 small text-muted">Konfigurierte URL: <code>${escapeHtml(url.length > 80 ? url.slice(0, 80) + "…" : url)}</code></p>` : "";
+  const titel = kontext.leer ? "Keine Datensätze gefunden." : info.titel;
+  const alertClass = kontext.leer ? "alert-info" : info.alertClass;
+  container.innerHTML = `<div class="alert ${alertClass}" role="alert"><strong>${escapeHtml(titel)}</strong><p class="mb-1">${escapeHtml(info.hinweis)}</p>${urlZeile}<details class="small"><summary>Details</summary><code>${escapeHtml(info.detail || String(error))}</code></details></div>`;
 }
 
 function safeTelephone(value) {
@@ -1381,7 +1519,7 @@ function gastroImageIsUsable(image) {
 
 function renderGastroImageAttribution(image, className = "") {
   const license = image && normalizeGastroLicense(image.licenseUrl, image.credit);
-  const licenseUrl = license ? safeHttpUrl(license.url) : "";
+  const licenseUrl = safeHttpUrl(license && license.url);
   const sourceUrl = safeHttpUrl(image && image.sourceUrl);
   if (!image || (!licenseUrl && !sourceUrl && !image.credit)) return "";
   return `<span class="gf-image-attribution ${escapeHtml(className)}"><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${licenseUrl ? `<a href="${escapeHtml(licenseUrl)}" target="_blank" rel="noopener noreferrer">Lizenz ${escapeHtml(license.label)}</a>` : ""}${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle</a>` : ""}</span>`;
@@ -1505,7 +1643,7 @@ function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
   const lat = item.lat != null ? Number(item.lat) : null;
   const lng = item.lng != null ? Number(item.lng) : null;
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
-  const routeUrl = hasCoords ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}` : "";
+  const routeUrl = safeHttpUrl(hasCoords ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}` : "");
 
   // Only show images with independently verified photo rights.
   const rawImages = Array.isArray(item.images) ? item.images : [];
@@ -3147,6 +3285,17 @@ async function app(configdata = {}, enclosingHtmlDivElement) {
     setGastroFullscreen(enclosingHtmlDivElement, false);
     if (enclosingHtmlDivElement.classList && enclosingHtmlDivElement.classList.remove) enclosingHtmlDivElement.classList.remove("gf-root");
     const message = error && error.message ? error.message : "Die App ist nicht konfiguriert.";
+    // Datenquellenfehler (fehlend/falscher Endpunkt) in der Portfolio-Standardanzeige
+    // (Variante A); Ort-, Umkreis- und Koordinatenfehler wie bisher.
+    if (error && (error.code === "NO_SOURCE" || /DZT-Datenquelle/.test(message))) {
+      renderOdasFehler(enclosingHtmlDivElement, error, {
+        url: getOdasApiUrl(configdata, "dztsparql"),
+        label: "DZT Knowledge Graph (SPARQL)",
+        typLabel: "Wissensdatenbank (SPARQL)",
+        erwarteterTyp: "sparql",
+      });
+      return;
+    }
     enclosingHtmlDivElement.innerHTML = `<div class="alert alert-danger" role="alert">${escapeHtml(message)}</div>`;
     return;
   }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.9 - 2026-10-13
+- FIX: Datenquellenfehler (fehlende Quelle, falscher Endpunkt) zeigen die Portfolio-Standardfehleranzeige (`renderOdasFehler`, Variante A); Ort-, Umkreis- und Koordinatenfehler bleiben unverändert.
+- FIX: `safeHttpUrl` gibt gültige URLs unverändert zurück; Lizenz- und Routenlink sind direkt an `safeHttpUrl` gebunden.
+
 ## 1.2.8 - 2026-10-13
 - ENH: Datenvertrag `assets/datenvertraege.json` für die Store-Datenprüfung: die DZT-Quelle `dztsparql` ist ausdrücklich von der Frictionless-Prüfung ausgenommen (`daten.pruefung`).
 
