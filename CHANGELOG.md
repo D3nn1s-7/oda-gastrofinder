@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.10 - 2026-10-13
+- FIX: Standard-Fehleranzeige gibt präzisere Tipps: ein „Failed to fetch“ ohne Proxy-Kontext erhält einen Netzwerk-Hinweis statt `proxyAktiv`; der 404-Hinweis gilt nur noch für echte HTTP-404-Antworten und nennt den lokal fehlenden Proxy/Relay statt pauschal „Datensatz auf dem Portal nicht gefunden“.
+- UI: Die Konfigurationsgruppe der Datenquellen heißt wie im übrigen Portfolio „URLs zu Datenressourcen“ (passend zum Hinweistext der Fehleranzeige).
+
 ## 1.2.9 - 2026-10-13
 - FIX: Datenquellenfehler (fehlende Quelle, falscher Endpunkt) zeigen die Portfolio-Standardfehleranzeige (`renderOdasFehler`, Variante A); Ort-, Umkreis- und Koordinatenfehler bleiben unverändert.
 - FIX: `safeHttpUrl` gibt gültige URLs unverändert zurück; Lizenz- und Routenlink sind direkt an `safeHttpUrl` gebunden.

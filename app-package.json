@@ -3,7 +3,7 @@
   "app-entwickler-name": "ondics-gmbh",
   "name-in-url": "gastrofinder",
   "name": "Gastrofinder",
-  "app-version": "1.2.9",
+  "app-version": "1.2.10",
   "app-package-version": "2",
   "odas-app-icon": "assets/odas-app-icon.svg",
   "app-icon": "assets/odas-app-icon.svg",
@@ -246,7 +246,7 @@
       "erforderlich": "nein"
     },
     "apiurls": {
-      "label": "Datenquelle",
+      "label": "URLs zu Datenressourcen",
       "category": "datenherkunft",
       "hilfe": "Diese App benötigt die Wissensdatenbank-Ressource „DZT Knowledge Graph (SPARQL)“ und liest Restaurant- und Café-Datensätze ausschließlich über das ODAS-DZT-Relay.",
       "typ": "array",
