@@ -1,7 +1,8 @@
 {
   "version": "1",
-  "table-schema-version": "1.0",
   "quellen": {
-    "dztsparql": { "bedarf": "pflicht", "dienst": "tourismus-odg" }
+    "dztsparql": {
+      "dienst": "tourismus-odg"
+    }
   }
 }

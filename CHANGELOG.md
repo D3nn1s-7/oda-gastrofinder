@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.11 - 2026-10-14
+- CHG: Datenvertrag `assets/datenvertraege.json` auf die flache Form der Store-Datenprüfung umgestellt: ein Eintrag je Slot (`dienst: "tourismus-odg"`); Pflicht oder optional folgt allein `erforderlich` des Slots. Prüfinhalt und Testfälle unverändert.
+
 ## 1.2.10 - 2026-10-13
 - FIX: Standard-Fehleranzeige gibt präzisere Tipps: ein „Failed to fetch“ ohne Proxy-Kontext erhält einen Netzwerk-Hinweis statt `proxyAktiv`; der 404-Hinweis gilt nur noch für echte HTTP-404-Antworten und nennt den lokal fehlenden Proxy/Relay statt pauschal „Datensatz auf dem Portal nicht gefunden“.
 - UI: Die Konfigurationsgruppe der Datenquellen heißt wie im übrigen Portfolio „URLs zu Datenressourcen“ (passend zum Hinweistext der Fehleranzeige).
