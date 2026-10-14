@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.12 - 2026-10-14
+- DOCS: Datenschutztexte in README, Paket und lokaler Config an die Portfolio-Bausteine angeglichen (Bibliotheks-Satz, gleiche Drittanbieterliste); Markdown-Rest `**…**` in der lokalen Config durch `<strong>` ersetzt.
+
 ## 1.2.11 - 2026-10-14
 - CHG: Datenvertrag `assets/datenvertraege.json` auf die flache Form der Store-Datenprüfung umgestellt: ein Eintrag je Slot (`dienst: "tourismus-odg"`); Pflicht oder optional folgt allein `erforderlich` des Slots. Prüfinhalt und Testfälle unverändert.
 

@@ -111,14 +111,18 @@ Auch dieser Container stellt selbst keinen DZT-Relay bereit. Die echte DZT-Anbin
 
 ## Beim Aufruf kontaktierte Drittanbieter
 
-Alle Programmbibliotheken und Fonts werden lokal aus `app/vendor/` ausgeliefert, ohne CDN-Anfragen.
+Alle für die Darstellung benötigten Programmbibliotheken und Schriftarten werden lokal aus `app/vendor/` ausgeliefert. Beim Aufruf werden dafür keine externen Server kontaktiert.
 
-- DZT: Browserabruf ausschließlich über das serverseitige `/dzt`-Relay der App-Instanz.
-- `*.tile.openstreetmap.org`: direkte Kartenkachelanfragen; der Kartendienst erhält IP-Adresse und technische Verbindungsangaben.
-- Bildhosts der freigegebenen DZT-Bilder: Vorschaubilder/Fotos können direkt aus dem Browser geladen werden; dabei fallen entsprechende Verbindungsdaten an. Bild- und Quellverweise stehen am Nachweis.
-- Google Maps und Betriebswebsites: erst nach Linkklick. Telefonlinks: erst nach Nutzeraktion.
+DZT-Daten werden ausschließlich über das serverseitige `/dzt`-Relay der App-Instanz geladen; der Browser sendet keinen direkten DZT-API-Aufruf.
 
-Es gibt kein Tracking und keine GPS-Abfrage. GeoNames-Ortsauflösung erfolgt offline. Maßgeblich sind ergänzend die Angaben des jeweiligen Portalbetreibers.
+Folgende externe Server werden kontaktiert:
+
+- **OpenStreetMap (`*.tile.openstreetmap.org`):** Kartenkacheln werden direkt aus dem Browser geladen. Dabei erhält der Kartendienst die IP-Adresse und technische Angaben der Verbindung.
+- **Bildanbieter der angezeigten DZT-Datensätze:** Freigegebene Vorschaubilder und Fotos können automatisch von ihren jeweiligen Bildhosts geladen werden. Auch diese Anbieter erhalten die IP-Adresse und technische Angaben der Verbindung. Die konkreten Bild- und Quellverweise sind am Bildnachweis erreichbar.
+
+Externe Websites und Routenplaner (Google Maps) werden erst nach einem Linkklick geöffnet; Telefonlinks werden erst auf Nutzeraktion an die Telefonanwendung übergeben.
+
+Es gibt kein Tracking und keine GPS-Abfrage. Die Ortsauflösung erfolgt offline über einen mitgelieferten GeoNames-Auszug. Maßgeblich sind ergänzend die Angaben des jeweiligen Portalbetreibers.
 
 ## Screenshots
 
