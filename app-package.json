@@ -3,7 +3,7 @@
   "app-entwickler-name": "ondics-gmbh",
   "name-in-url": "gastrofinder",
   "name": "Gastrofinder",
-  "app-version": "1.2.12",
+  "app-version": "1.2.13",
   "app-package-version": "2",
   "odas-app-icon": "assets/odas-app-icon.svg",
   "app-icon": "assets/odas-app-icon.svg",
@@ -57,7 +57,6 @@
     "assets/Mobile_Screenshot_3.png"
   ],
   "daten": {
-    "pruefung": "assets/datenvertraege.json",
     "beschreibung": "Die App normalisiert SPARQL-Bindings des DZT Knowledge Graph zu regionalen Restaurant- und Café-Betrieben. Die Lizenz- und Bildnachweise bleiben objektbezogen erhalten.",
     "schema": "assets/schema.json",
     "beispiel": "Die Quelle liefert JSON-LD-/SPARQL-Bindings mit stabiler Quell-ID, RDF-Typ, Geo-Knoten, Adressknoten, strukturierten Küchen, Kontakten, Öffnungszeiten sowie Lizenz- und Bildnachweisen. Daraus entsteht ein GastroPoi-Datensatz mit id, types, name, address, lat, lng, distanceKm, cuisines, images, dataLicense, description, openingHours, websites und telephones.",

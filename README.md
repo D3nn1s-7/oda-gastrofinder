@@ -141,7 +141,7 @@ Historischer [Prüfnachweis zum Runtime-Stand 1.2.3](tests/evidence/release-read
 
 ## Lieferung und Projektstruktur
 
-- App-Version: **1.2.11** (Datenvertrag in flacher Form; zuvor 1.2.10 präzisere Fehlertipps, 1.2.9 Portfolio-Standardfehleranzeige für Datenquellenfehler, 1.2.8 Datenvertrag, 1.2.7 native Menüanimation und reduzierte Bewegung; Katalog-Rechtebereich, einheitliches App-Logo und grüne Bedienzustände bleiben erhalten); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
+- App-Version: **1.2.13** (Datenvertrag entfernt; zuvor 1.2.12 angeglichene Datenschutztexte, 1.2.11 Datenvertrag in flacher Form, 1.2.10 präzisere Fehlertipps, 1.2.9 Portfolio-Standardfehleranzeige für Datenquellenfehler, 1.2.8 Datenvertrag, 1.2.7 native Menüanimation und reduzierte Bewegung; Katalog-Rechtebereich, einheitliches App-Logo und grüne Bedienzustände bleiben erhalten); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
 - `make zip` erzeugt jedes Mal ein **neues** `oda-gastrofinder.zip`, damit entfernte Dateien nicht im Archiv überleben.
 - Lieferumfang: `app/`, `assets/`, `app-package.json`, `CHANGELOG.md`, `LICENSE`.
 - `tests/`, `tools/`, `odas-config/` und Entwicklungsnachweise sind nicht Teil des ZIPs.
