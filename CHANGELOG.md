@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.14 - 2026-10-23
+- FIX: Sichtbare Fehlerhinweise der Übersicht und der Details unterscheiden die Fehlerklasse (Zugriff abgelehnt, Relay nicht möglich, Abfragelimit, ungültige Antwort, Quelle nicht erreichbar) statt zwei Sammeltexte; bei Abfragelimit mit Wartezeit wird die verbleibende Zeit angezeigt.
+- FIX: Ein Klick auf „Weitere Daten laden“ während der Abfragelimit-Wartezeit bestätigt den Hinweis sichtbar, statt still nichts zu tun.
+- TEST: Gezielte Laufzeittests für Fehlerhinweise, Wartezeit, Cooldown-Bestätigung und Konfigurationsfehleranzeige ergänzt (137 Node-Tests).
+- CHG: `app/index.html` wieder bytegleich mit der Generic-Vorlage (zwei Header-Spaltenklassen angeglichen).
+
 ## 1.2.13 - 2026-10-16
 - FIX: Datenvertrag für die Store-Datenprüfung des aufgegebenen Frictionless-Branches entfernt (`daten.pruefung`, `assets/datenvertraege.json`, Testfälle). Der Store prüft auf `dev` gegen `assets/schema.json`; die App selbst ist unverändert.
 

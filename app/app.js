@@ -1249,7 +1249,12 @@ function runtimeIsCurrent(state, generation) {
 
 async function loadNextGastroPage(state, notify = () => {}) {
   if (!state || !state.runtime || !state.runtime.active || !state.page || state.page.done || state.page.busy) return;
-  if (state.page.retryAt && state.page.retryAt > Date.now()) return;
+  if (state.page.retryAt && state.page.retryAt > Date.now()) {
+    // Wartezeit sichtbar bestätigen statt still nichts zu tun; der Statushinweis
+    // zeigt über describeGastroSourceError() die verbleibenden Sekunden.
+    notify();
+    return;
+  }
   if (!state.region || !state.sourceUrl) {
     state.page.error = stateError("CONFIG", "Die Region ist noch nicht aufgelöst.");
     notify();
@@ -1618,12 +1623,13 @@ function renderGastroHours(hours) {
   }).join("")}</ul>`;
 }
 
-function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready") {
+function renderGastroHeroDetails(poi, uid = "gf-detail", status = "ready", error = null) {
   if (status === "loading") {
     return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body position-relative text-center p-5"><button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Schließen" title="Schließen"></button><div class="spinner-border gf-spinner-forest" role="status"><span class="visually-hidden">Details werden geladen …</span></div><p class="mt-3 text-muted">Details werden geladen …</p></div>`;
   }
   if (status === "error") {
-    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-secondary fw-semibold" role="alert">Die Detailangaben konnten nicht geladen werden.</p><button type="button" class="btn btn-outline-forest btn-sm me-2" data-gf-detail-retry>Erneut versuchen</button><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
+    const reason = error ? `<p class="small text-muted mb-3">${escapeHtml(describeGastroSourceError(error))}</p>` : "";
+    return `<div id="${escapeHtml(`${uid}-content`)}" class="modal-body text-center p-5"><p class="text-secondary fw-semibold" role="alert">Die Detailangaben konnten nicht geladen werden.</p>${reason}<button type="button" class="btn btn-outline-forest btn-sm me-2" data-gf-detail-retry>Erneut versuchen</button><button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Schließen</button></div>`;
   }
 
   const item = poi || {};
@@ -1965,14 +1971,38 @@ function bindGastroImageFallbacks(root) {
   }
 }
 
+function describeGastroSourceError(error) {
+  const code = error && error.code;
+  if (code === "ACCESS") {
+    return "Der Zugriff auf die Datenquelle wurde abgelehnt. Bitte die Betreiberin oder den Betreiber der App-Instanz informieren.";
+  }
+  if (code === "RELAY") {
+    return "Der Datenabruf über das serverseitige Relay der App-Instanz ist derzeit nicht möglich.";
+  }
+  if (code === "RATE_LIMIT") {
+    const waitMs = error.retryAt ? error.retryAt - Date.now() : 0;
+    return waitMs > 0
+      ? `Zu viele Anfragen an die Datenquelle. Bitte in ca. ${Math.ceil(waitMs / 1000)} Sekunden erneut versuchen.`
+      : "Zu viele Anfragen an die Datenquelle. Bitte später erneut versuchen.";
+  }
+  if (code === "PAYLOAD") {
+    return "Die Antwort der Datenquelle war ungültig und konnte nicht gelesen werden.";
+  }
+  if (code === "CONFIG") {
+    return (error && error.message) || "Die App ist unvollständig konfiguriert.";
+  }
+  if (code === "HTTP") {
+    return "Die Datenquelle ist gerade nicht erreichbar. Bitte später erneut versuchen.";
+  }
+  return "Die Daten konnten nicht geladen werden. Bitte später erneut versuchen.";
+}
+
 function updateGastroStatus(root, state, view) {
   if (!root || typeof root.querySelector !== "function") return;
   const status = root.querySelector('[data-gf="status"]');
   if (!status) return;
   if (state.page.error) {
-    status.textContent = state.page.error.code === "ACCESS" || state.page.error.code === "RELAY"
-      ? "Die Datenquelle ist gerade nicht erreichbar. Bitte später erneut versuchen."
-      : "Die Daten konnten nicht geladen werden. Bitte später erneut versuchen.";
+    status.textContent = describeGastroSourceError(state.page.error);
   } else if (state.page.busy) {
     status.textContent = "Weitere Daten werden geladen …";
   } else if (state.page.done && !state.byId.size) {
@@ -2159,7 +2189,7 @@ function updateGastroDetailDialog(root, state) {
   if (!selected) return false;
   const detail = state.details.get(selected.id);
   const status = state.detail.error ? "error" : state.detail.busy || !detail ? "loading" : "ready";
-  element.innerHTML = renderGastroHeroDetails(detail || selected, state.runtime.uid, status);
+  element.innerHTML = renderGastroHeroDetails(detail || selected, state.runtime.uid, status, status === "error" ? state.detail.error : null);
   if (typeof element.setAttribute === "function") element.setAttribute("aria-labelledby", `gf-${state.runtime.uid}-title`);
   bindGastroImageFallbacks(element);
   return true;
@@ -2281,7 +2311,7 @@ function openDetailModal(state, poiId, shouldLoadDetails = true, showModal = tru
       : state.detail && isSelected && state.detail.busy ? "loading"
         : detail ? "ready" : "ready";
     const displayedPoi = detail || poi;
-    modalContent.innerHTML = renderGastroHeroDetails(displayedPoi, uid, status);
+    modalContent.innerHTML = renderGastroHeroDetails(displayedPoi, uid, status, status === "error" && state.detail ? state.detail.error : null);
     bindGastroImageFallbacks(modalContent);
 
     const showOnMapBtn = modalContent.querySelector && modalContent.querySelector("[data-gf-show-on-map]");
