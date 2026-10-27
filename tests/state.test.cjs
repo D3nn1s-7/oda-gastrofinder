@@ -145,3 +145,11 @@ test("Ein Klick auf Nachladen ruft genau eine Relay-Seite ab und schützt bei Fe
   assert.ok(failedState.page.error);
   assert.equal(before, "https://example.org/gastro/0000");
 });
+
+test("Namenssortierung folgt der deutschen Sortierung (Umlaute, Groß-/Kleinschreibung, Satzzeichen, Zahlen)", () => {
+  const api = loadAppWithFixtures();
+  const names = ["Burger Buddys", "Zur Linde", "Bäckerei Dreißig", "\"Trattoria Bella Vita\"", "arkona Café", "Café 10", "Café 9"];
+  const pois = names.map((name, index) => ({ id: `https://example.org/${index}`, name }));
+  const sorted = Array.from(pois.sort((a, b) => api.comparePoiOrder(a, b, "name")), (poi) => poi.name);
+  assert.deepEqual(sorted, ["arkona Café", "Bäckerei Dreißig", "Burger Buddys", "Café 9", "Café 10", "\"Trattoria Bella Vita\"", "Zur Linde"]);
+});

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.17 - 2026-10-27
+- FIX: Sortierung nach Name folgt der deutschen Sortierung: Namen mit Umlauten („Bäckerei …“), Kleinschreibung und führenden Anführungszeichen stehen an der richtigen Stelle, Zahlen werden numerisch sortiert (bisher Unicode-Codepunkte). Gefunden beim Dev-Test von 1.2.16.
+
 ## 1.2.16 - 2026-10-27
 - CHG: Nutzerentscheidung: Alle im DZT Knowledge Graph hinterlegten Bilder (`schema:image`) werden verwendet, ohne Filter nach Lizenz oder Urheberangabe. Vorhandene Urheber-, Lizenz- und Quellenangaben werden weiter angezeigt, auch für weitere CC-Lizenzen (z. B. BY-NC-SA, BY-ND); die Datensatzlizenz wird nicht als Bildlizenz übernommen.
 - FIX: Liste und Katalog wählen das erste Bild mit Bild-URL.

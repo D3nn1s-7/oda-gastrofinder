@@ -1205,7 +1205,9 @@ function stateMatchesType(poi, type) {
 
 function comparePoiOrder(a, b, sort) {
   if (sort === "name") {
-    const nameOrder = compareSourceIds(a.name || "", b.name || "");
+    // Deutsche Sortierung für Menschen (Umlaute, Groß-/Kleinschreibung, Satzzeichen, Zahlen);
+    // die Quell-ID bleibt der stabile Gleichstand-Entscheider.
+    const nameOrder = String(a.name || "").localeCompare(String(b.name || ""), "de", { sensitivity: "base", ignorePunctuation: true, numeric: true });
     return nameOrder || compareSourceIds(a.id, b.id);
   }
   const distanceOrder = (a.distanceKm || 0) - (b.distanceKm || 0);
