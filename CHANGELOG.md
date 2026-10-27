@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.18 - 2026-10-27
+- FIX: Ergebnisliste: Bildnachweise liegen nicht mehr über dem kleinen Vorschaubild, sondern unter dem Kartentext; Urheber, Lizenz und Quelle bleiben vollständig verlinkt (Desktop und Mobile).
+- TEST: Markup-Test und opt-in Browserregression `tests/list-card-credit.browser.cjs` (Google Chrome, 1440/390/320 px).
+- DOC: Storebilder mit der korrigierten Ergebnisliste neu aufgenommen.
+
 ## 1.2.17 - 2026-10-27
 - FIX: Sortierung nach Name folgt der deutschen Sortierung: Namen mit Umlauten („Bäckerei …“), Kleinschreibung und führenden Anführungszeichen stehen an der richtigen Stelle, Zahlen werden numerisch sortiert (bisher Unicode-Codepunkte). Gefunden beim Dev-Test von 1.2.16.
 

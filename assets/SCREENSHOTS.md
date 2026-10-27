@@ -1,6 +1,6 @@
 # Store-Screenshots – 2026-10-27
 
-Sechs aktuelle Bilder der App-Version **1.2.15**, jeweils Übersicht, Katalog und Detailansicht. Die Desktop- und Mobile-Aufnahmen zeigen dieselben drei Motive. Aufgenommen in Google Chrome über DevTools/CDP und lokalen Live Server; Schriften und sichtbare Bilder/Kartenkacheln geladen, echte endliche Übergänge vollständig abgewartet. Sie dokumentieren die unveränderte App-Laufzeit mit synthetischen Testdaten, keine realen DZT-Livedaten und keine Live-Abnahme oder Produktions-/Veröffentlichungsfreigabe.
+Sechs aktuelle Bilder der App-Version **1.2.18**, jeweils Übersicht, Katalog und Detailansicht. Die Desktop- und Mobile-Aufnahmen zeigen dieselben drei Motive. Aufgenommen in Google Chrome über DevTools/CDP und lokalen Live Server; Schriften und sichtbare Bilder/Kartenkacheln geladen, echte endliche Übergänge vollständig abgewartet. Sie dokumentieren die unveränderte App-Laufzeit mit synthetischen Testdaten, keine realen DZT-Livedaten und keine Live-Abnahme oder Produktions-/Veröffentlichungsfreigabe.
 
 | Motiv | Desktop | Mobile |
 |---|---|---|

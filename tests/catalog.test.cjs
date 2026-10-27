@@ -142,3 +142,17 @@ test("mobile drawer toggling updates view mode and switcher button state", () =>
   assert.ok(!root.classList.contains("gf-mobile-list"), "Root must not have gf-mobile-list class");
   assert.strictEqual(switcherBtn.attributes["aria-pressed"], "false", "Switcher aria-pressed must be false");
 });
+
+test("list card credits sit below the card text, not over the small thumbnail", () => {
+  const scope = loadGastroScope();
+  const credit = "CentroVital, Hektikproduktions, Lizenz: CentroVital ".repeat(3).trim();
+  const image = { url: "https://example.org/photo.svg", credit, licenseUrl: "https://creativecommons.org/licenses/by/4.0/", sourceUrl: "https://example.org/source" };
+  const poi = { id: "https://example.org/list-credit", name: "Demo-Bistro", types: ["https://schema.org/Restaurant"], images: [image] };
+  const html = scope.renderGastroCard(poi);
+  const thumb = html.match(/<div class="gf-card-thumb-wrap">([\s\S]*?)<\/div>\s*<div class="gf-card-content">/)[1];
+  assert.ok(!thumb.includes("gf-card-photo-credit"), "credit must not cover the thumbnail");
+  assert.ok(html.indexOf("gf-card-photo-credit") > html.indexOf("gf-card-content"), "credit belongs to the card text");
+  assert.ok(html.includes(credit), "complete rights-party text is retained");
+  assert.ok(html.includes(image.licenseUrl) && html.includes(image.sourceUrl), "licence and source remain linked");
+  assert.ok(!scope.renderGastroCard({ ...poi, images: [] }).includes("gf-card-photo-credit"), "no empty credit area without an image");
+});

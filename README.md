@@ -80,10 +80,10 @@ Die Fixture ersetzt ausschließlich die Testantworten und zeigt einen sichtbaren
 
 ### Tests und ZIP
 
-Menütransition und mobiler Listenfuß lassen sich mit einer vorhandenen Playwright-/Chrome-Installation zusätzlich prüfen (keine zusätzliche App-Abhängigkeit):
+Menütransition, mobiler Listenfuß und Bildnachweise der Ergebnisliste lassen sich mit einer vorhandenen Playwright-/Chrome-Installation zusätzlich prüfen (keine zusätzliche App-Abhängigkeit):
 
 ```bash
-PLAYWRIGHT_MODULE=/pfad/zur/playwright-installation node --test tests/menu-motion.browser.cjs tests/mobile-list-footer.browser.cjs
+PLAYWRIGHT_MODULE=/pfad/zur/playwright-installation node --test tests/menu-motion.browser.cjs tests/mobile-list-footer.browser.cjs tests/list-card-credit.browser.cjs
 ```
 
 ```bash
@@ -126,7 +126,7 @@ Es gibt kein Tracking und keine GPS-Abfrage. Die Ortsauflösung erfolgt offline 
 
 ## Screenshots
 
-Die sechs Store-Bilder zeigen den Dokumentationsstand der App-Version **1.2.15**, aufgenommen am **2026-10-27** mit **gekennzeichneten synthetischen Testdaten** (keine realen DZT-Livedaten); sie sind kein Nachweis einer Live-Abnahme. Desktop und Mobile zeigen dieselben drei Motive; der separate 28-Pixel-Hinweisrand ist nicht Teil der App-Oberfläche.
+Die sechs Store-Bilder zeigen den Dokumentationsstand der App-Version **1.2.18**, aufgenommen am **2026-10-27** mit **gekennzeichneten synthetischen Testdaten** (keine realen DZT-Livedaten); sie sind kein Nachweis einer Live-Abnahme. Desktop und Mobile zeigen dieselben drei Motive; der separate 28-Pixel-Hinweisrand ist nicht Teil der App-Oberfläche.
 
 | Ansicht | Übersicht | Katalog | Detail |
 |---|---|---|---|
@@ -141,7 +141,7 @@ Historischer [Prüfnachweis zum Runtime-Stand 1.2.3](tests/evidence/release-read
 
 ## Lieferung und Projektstruktur
 
-- App-Version: **1.2.17** (deutsche Namenssortierung; zuvor 1.2.16 alle Bilder der Quelle ohne Rechtefilter, eigene Illustrationen ohne Foto; zuvor 1.2.15 mobile Listenschaltflächen nicht mehr verdeckt, lesbare Öffnungszeiten; zuvor 1.2.14 Fehlerhinweise nach Fehlerklasse mit sichtbarem 429-Wartehinweis und bytegleicher `index.html` zur Vorlage; zuvor 1.2.13 Datenvertrag entfernt, 1.2.12 Datenschutztexte, 1.2.11 Datenvertrag flach, 1.2.10 präzisere Fehlertipps, 1.2.9 Standardfehleranzeige, 1.2.7 native Menüanimation und grüne Bedienzustände); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
+- App-Version: **1.2.18** (Bildnachweise der Ergebnisliste unter dem Kartentext; zuvor 1.2.17 deutsche Namenssortierung; zuvor 1.2.16 alle Bilder der Quelle ohne Rechtefilter, eigene Illustrationen ohne Foto; zuvor 1.2.15 mobile Listenschaltflächen nicht mehr verdeckt, lesbare Öffnungszeiten; zuvor 1.2.14 Fehlerhinweise nach Fehlerklasse mit sichtbarem 429-Wartehinweis und bytegleicher `index.html` zur Vorlage; zuvor 1.2.13 Datenvertrag entfernt, 1.2.12 Datenschutztexte, 1.2.11 Datenvertrag flach, 1.2.10 präzisere Fehlertipps, 1.2.9 Standardfehleranzeige, 1.2.7 native Menüanimation und grüne Bedienzustände); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
 - `make zip` erzeugt jedes Mal ein **neues** `oda-gastrofinder.zip`, damit entfernte Dateien nicht im Archiv überleben.
 - Lieferumfang: `app/`, `assets/`, `app-package.json`, `CHANGELOG.md`, `LICENSE`.
 - `tests/`, `tools/`, `odas-config/` und Entwicklungsnachweise sind nicht Teil des ZIPs.

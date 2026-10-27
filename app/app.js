@@ -1597,7 +1597,7 @@ function renderGastroCard(poi, uid = "gf-card", selected = false) {
   const typeLabels = gastroTypeLabels(item);
 
   return `<article id="${escapeHtml(`${uid}-card-${gastroDomToken(item.id)}`)}" class="gf-card gf-clean-card${selected ? " is-selected" : ""}" data-gf-card data-gf-id="${escapeHtml(item.id || "")}">
-    <div class="gf-card-thumb-wrap">${media}${imageAttribution ? `<div class="gf-card-photo-credit">${imageAttribution}</div>` : ""}</div>
+    <div class="gf-card-thumb-wrap">${media}</div>
     <div class="gf-card-content">
       <div class="gf-card-heading-wrap">
         <h3 class="gf-card-heading" title="${escapeHtml(item.name || "")}">${escapeHtml(item.name || "Name nicht angegeben")}</h3>
@@ -1610,6 +1610,7 @@ function renderGastroCard(poi, uid = "gf-card", selected = false) {
         ${typeLabels.map((label) => `<span class="gf-badge${label === "Café" ? " gf-badge-cafe" : ""}">${escapeHtml(label)}</span>`).join("")}
         ${cuisine ? `<span class="gf-badge gf-badge-cuisine">${escapeHtml(cuisine)}</span>` : ""}
       </div>
+      ${imageAttribution ? `<div class="gf-card-photo-credit">${imageAttribution}</div>` : ""}
       <div class="gf-card-action">
         <button type="button" class="gf-card-select gf-btn-detail-link" data-gf-select data-gf-control="card-details" data-gf-id="${escapeHtml(item.id || "")}" aria-pressed="${selected ? "true" : "false"}">
           Details ansehen »
