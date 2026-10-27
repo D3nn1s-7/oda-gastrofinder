@@ -1701,6 +1701,13 @@ body.gf-app-fullscreen #main-content {
     position: fixed;
     bottom: max(1rem, env(safe-area-inset-bottom));
     display: inline-flex;
+    white-space: nowrap;
+  }
+
+  /* In der mobilen Liste schwebt "Karte ansehen" über dem Listenfuß. Der Fuß reserviert
+     darunter Platz, damit "Mehr anzeigen" und "Weitere Daten laden" bedienbar bleiben. */
+  .gf-mobile-list .gf-results-footer {
+    padding-bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 48px + .75rem);
   }
 
   .gf-map-controls {

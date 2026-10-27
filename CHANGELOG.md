@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.15 - 2026-10-27
+- FIX: Mobile Ergebnisliste: Die schwebende Schaltfläche „Karte ansehen“ verdeckt „Mehr anzeigen“ und „Weitere Daten laden“ nicht mehr; ein Tippen auf „Mehr anzeigen“ zeigt weitere Orte statt zur Karte zu wechseln (320/390 px).
+- FIX: Öffnungszeiten lesbarer: Wochentage von Montag bis Sonntag (alle sieben als „Täglich“, Folgen als Spanne), Uhrzeiten als HH:MM, Schließzeit Mitternacht als 24:00, Gültigkeit als deutsches Datum; abgelaufene Zeiträume werden ausgeblendet. Echte Zeiten über Mitternacht bleiben als „bis zum Folgetag“ erkennbar.
+- TEST: Laufzeittests für Öffnungszeiten und opt-in Browserregression `tests/mobile-list-footer.browser.cjs` (Google Chrome) ergänzt.
+- DOC: Repository-Angabe, Prüfverweise und Mobile-Store-Bild aktualisiert.
+
 ## 1.2.14 - 2026-10-23
 - FIX: Sichtbare Fehlerhinweise der Übersicht und der Details unterscheiden die Fehlerklasse (Zugriff abgelehnt, Relay nicht möglich, Abfragelimit, ungültige Antwort, Quelle nicht erreichbar) statt zwei Sammeltexte; bei Abfragelimit mit Wartezeit wird die verbleibende Zeit angezeigt.
 - FIX: Ein Klick auf „Weitere Daten laden“ während der Abfragelimit-Wartezeit bestätigt den Hinweis sichtbar, statt still nichts zu tun.

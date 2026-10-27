@@ -93,7 +93,8 @@ test("Detailstatus loading erfindet keine fehlenden Angaben", () => {
 });
 
 test("mehrteilige, saisonale und über Mitternacht reichende Zeiten bleiben vollständig", () => {
-  const api = loadApp();
+  const now = new Date("2026-10-27T12:00:00+01:00").getTime();
+  const api = loadApp({ Date: class extends Date { constructor(...a) { if (a.length) super(...a); else super(now); } static now() { return now; } } });
   const markup = api.renderGastroDetails(samplePoi({
     openingHours: [
       { days: ["https://schema.org/Monday"], opens: "11:00", closes: "14:00" },
@@ -104,7 +105,7 @@ test("mehrteilige, saisonale und über Mitternacht reichende Zeiten bleiben voll
   assert.match(markup, /<strong>Montag<\/strong>: 11:00–14:00/);
   assert.match(markup, /<strong>Montag<\/strong>: 17:00–22:00/);
   assert.match(markup, /<strong>Freitag<\/strong>: 22:00–02:00 bis zum Folgetag/);
-  assert.match(markup, /gültig 2026-01-01 bis 2026-12-31/);
+  assert.match(markup, /gültig 01\.01\.2026–31\.12\.2026/);
   assert.doesNotMatch(markup, /Jetzt geöffnet|geschlossen/);
 });
 

@@ -1598,28 +1598,83 @@ function renderGastroCard(poi, uid = "gf-card", selected = false) {
 function gastroDayLabel(value) {
   const days = {
     Monday: "Montag", Tuesday: "Dienstag", Wednesday: "Mittwoch", Thursday: "Donnerstag",
-    Friday: "Freitag", Saturday: "Samstag", Sunday: "Sonntag",
+    Friday: "Freitag", Saturday: "Samstag", Sunday: "Sonntag", PublicHolidays: "Feiertage",
   };
   const tail = String(value || "").split("/").pop();
   return days[tail] || tail || "Tag nicht angegeben";
 }
 
+function gastroWeekdayIndex(value) {
+  return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    .indexOf(String(value || "").split("/").pop());
+}
+
+function formatGastroTime(value) {
+  const match = String(value || "").match(/^(\d{1,2}):(\d{2})/);
+  return match ? `${match[1].padStart(2, "0")}:${match[2]}` : String(value || "");
+}
+
+function gastroIsoDay(value) {
+  const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : "";
+}
+
+function formatGastroDate(value) {
+  const iso = gastroIsoDay(value);
+  return iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}` : String(value || "");
+}
+
+// Wochentage Montag bis Sonntag; alle sieben als "Täglich", ab drei aufeinanderfolgenden als Spanne.
+function formatGastroDays(days) {
+  const indexes = [];
+  const others = [];
+  for (const value of days || []) {
+    const index = gastroWeekdayIndex(value);
+    if (index < 0) others.push(gastroDayLabel(value));
+    else if (!indexes.includes(index)) indexes.push(index);
+  }
+  indexes.sort((a, b) => a - b);
+  const label = (index) => gastroDayLabel(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index]);
+  const parts = [];
+  if (indexes.length === 7) {
+    parts.push("Täglich");
+  } else {
+    for (let start = 0; start < indexes.length;) {
+      let end = start;
+      while (end + 1 < indexes.length && indexes[end + 1] === indexes[end] + 1) end += 1;
+      if (end - start >= 2) parts.push(`${label(indexes[start])}–${label(indexes[end])}`);
+      else for (let i = start; i <= end; i += 1) parts.push(label(indexes[i]));
+      start = end + 1;
+    }
+  }
+  return [...parts, ...others].join(", ") || "Tag nicht angegeben";
+}
+
 function renderGastroHours(hours) {
   if (!Array.isArray(hours) || !hours.length) return "Öffnungszeiten nicht angegeben";
-  return `<ul class="gf-hours-list">${hours.map((entry) => {
-    const days = (entry.days || []).map(gastroDayLabel).join(", ") || "Tag nicht angegeben";
-    const opens = entry.opens || "nicht angegeben";
-    const closes = entry.closes || "nicht angegeben";
-    const timeText = opens !== "nicht angegeben" && closes !== "nicht angegeben"
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const firstDay = (entry) => Math.min(7, ...(entry.days || []).map(gastroWeekdayIndex).filter((index) => index >= 0));
+  const current = hours
+    .filter((entry) => !gastroIsoDay(entry.validThrough) || gastroIsoDay(entry.validThrough) >= today)
+    .sort((a, b) => gastroIsoDay(a.validFrom).localeCompare(gastroIsoDay(b.validFrom))
+      || firstDay(a) - firstDay(b)
+      || formatGastroTime(a.opens).localeCompare(formatGastroTime(b.opens)));
+  if (!current.length) return "Keine aktuell gültigen Öffnungszeiten angegeben";
+  return `<ul class="gf-hours-list">${current.map((entry) => {
+    const opens = formatGastroTime(entry.opens);
+    let closes = formatGastroTime(entry.closes);
+    if (opens && closes === "00:00") closes = "24:00";
+    const timeText = opens && closes
       ? `${opens}–${closes}`
-      : `${opens} / ${closes}`;
-    const overnight = opens !== "nicht angegeben" && closes !== "nicht angegeben" && closes < opens
-      ? " bis zum Folgetag"
-      : "";
-    const validity = entry.validFrom || entry.validThrough
-      ? ` · gültig ${escapeHtml(entry.validFrom || "unbekannt")} bis ${escapeHtml(entry.validThrough || "unbekannt")}`
-      : "";
-    return `<li><strong>${escapeHtml(days)}</strong>: ${escapeHtml(timeText)}${escapeHtml(overnight)}${validity}</li>`;
+      : `${opens || "nicht angegeben"} / ${closes || "nicht angegeben"}`;
+    const overnight = opens && closes && closes !== "24:00" && closes < opens ? " bis zum Folgetag" : "";
+    const from = entry.validFrom ? formatGastroDate(entry.validFrom) : "";
+    const through = entry.validThrough ? formatGastroDate(entry.validThrough) : "";
+    const validity = from && through ? ` · gültig ${from}–${through}`
+      : from ? ` · gültig ab ${from}`
+        : through ? ` · gültig bis ${through}` : "";
+    return `<li><strong>${escapeHtml(formatGastroDays(entry.days))}</strong>: ${escapeHtml(timeText + overnight + validity)}</li>`;
   }).join("")}</ul>`;
 }
 
