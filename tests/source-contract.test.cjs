@@ -37,11 +37,13 @@ test('photo credit preserves copyright notice and resolved creator/holder names'
   assert.equal(image.title, 'Originaltitel');
 });
 
-test('a supplied copyright notice is evidence, but an unresolved creator IRI is not', () => {
+test('a supplied copyright notice is credited, but an unresolved creator IRI is not', () => {
   const imageId = id + '/image';
   const { app, rows, add } = setup({ images: [{ id: imageId, url: 'https://example.org/photo.jpg', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/' }] });
   add(imageId, 'creator', id + '/unresolved', 'uri');
-  assert.equal(app.normalizeDztRows(rows, region, 'detail').pois[0].images.length, 0);
+  const unresolved = app.normalizeDztRows(rows, region, 'detail').pois[0].images;
+  assert.equal(unresolved.length, 1);
+  assert.equal(unresolved[0].credit, '');
   add(imageId, 'copyrightNotice', 'Demo-Bildherausgeber');
   assert.equal(app.normalizeDztRows(rows, region, 'detail').pois[0].images[0].credit, 'Demo-Bildherausgeber');
 });

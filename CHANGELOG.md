@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.16 - 2026-10-27
+- CHG: Nutzerentscheidung: Alle im DZT Knowledge Graph hinterlegten Bilder (`schema:image`) werden verwendet, ohne Filter nach Lizenz oder Urheberangabe. Vorhandene Urheber-, Lizenz- und Quellenangaben werden weiter angezeigt, auch für weitere CC-Lizenzen (z. B. BY-NC-SA, BY-ND); die Datensatzlizenz wird nicht als Bildlizenz übernommen.
+- FIX: Liste und Katalog wählen das erste Bild mit Bild-URL.
+- ENH: Eigene Illustrationen für Restaurant und Café statt Symbolzeichen, wenn kein Foto vorhanden ist oder ein Bild nicht geladen werden kann.
+- FIX: Galerie zeigt keinen leeren Lizenzlink mehr, wenn die Quelle keine Lizenz nennt.
+- TEST: `tests/images.test.cjs`; zwei Tests der früheren Bildrechte-Regel an die Nutzerentscheidung angepasst.
+
 ## 1.2.15 - 2026-10-27
 - FIX: Mobile Ergebnisliste: Die schwebende Schaltfläche „Karte ansehen“ verdeckt „Mehr anzeigen“ und „Weitere Daten laden“ nicht mehr; ein Tippen auf „Mehr anzeigen“ zeigt weitere Orte statt zur Karte zu wechseln (320/390 px).
 - FIX: Öffnungszeiten lesbarer: Wochentage von Montag bis Sonntag (alle sieben als „Täglich“, Folgen als Spanne), Uhrzeiten als HH:MM, Schließzeit Mitternacht als 24:00, Gültigkeit als deutsches Datum; abgelaufene Zeiträume werden ausgeblendet. Echte Zeiten über Mitternacht bleiben als „bis zum Folgetag“ erkennbar.

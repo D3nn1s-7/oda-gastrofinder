@@ -73,7 +73,7 @@ test("Sprachauswahl bevorzugt Deutsch, dann neutral und erst danach andere Sprac
   assert.equal(missing.name, "Name nicht angegeben");
 });
 
-test("Bildrechte werden objektbezogen geprüft und nicht von der Datensatzlizenz abgeleitet", () => {
+test("Bildangaben bleiben objektbezogen und werden nicht von der Datensatzlizenz abgeleitet", () => {
   const api = loadAppWithFixtures();
   const rows = api.makeGastroRows({
     licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
@@ -84,12 +84,15 @@ test("Bildrechte werden objektbezogen geprüft und nicht von der Datensatzlizenz
     ],
   });
   const result = normalize(api, rows);
-  assert.equal(result.pois[0].images.length, 2);
-  assert.deepEqual(result.pois[0].images.map((image) => image.url), [
+  // Nutzerentscheidung 27.10.2026: alle Bilder mit URL werden verwendet.
+  assert.equal(result.pois[0].images.length, 3);
+  assert.deepEqual(Array.from(result.pois[0].images, (image) => image.url), [
     "https://example.org/a.jpg",
     "https://example.org/b.jpg",
+    "https://example.org/c.jpg",
   ]);
   assert.equal(result.pois[0].images[1].credit, "Testurheber");
+  assert.equal(result.pois[0].images[2].licenseUrl, "", "keine Bildlizenz aus der Datensatzlizenz");
 });
 
 test("eine unbekannte oder fehlende Datensatzlizenz sperrt den Betrieb", () => {

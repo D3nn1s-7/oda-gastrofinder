@@ -26,7 +26,7 @@ Die Abfrage verwendet ausschließlich die exakten Typen `https://schema.org/Rest
 
 Die Übersicht lädt höchstens **200 eindeutige Quell-IDs je Seite**. Weitere Seiten werden ausdrücklich nachgeladen. Filter und Zähler beschreiben den geladenen Bestand, nicht sämtliche Gastronomiebetriebe der Region. `assets/schema.json` dokumentiert das normalisierte Darstellungsmodell; die JSON-LD-Ansicht enthält die verwendeten RDF-Tripel und verknüpften Knoten.
 
-Datensatz- und Bildrechte werden getrennt geprüft. Ein Foto ohne eigenen ausreichenden Nachweis wird nicht angezeigt; eine Datensatzlizenz ist keine automatische Bildlizenz. Unterschiedliche Quellen können unterschiedliche Lizenzen und Einschränkungen haben.
+Die App zeigt alle im DZT Knowledge Graph hinterlegten Bilder eines Betriebs (`schema:image`) mit den dort vorhandenen Urheber-, Lizenz- und Quellenangaben. Bildrechte prüft die App nicht: Nicht jedes Bild hat in der Quelle eine Lizenz- oder Urheberangabe; die Verantwortung für die Nutzung liegt beim Portalbetreiber. Die Datensatzlizenz wird getrennt angezeigt und nicht als Bildlizenz übernommen. Betriebe ohne Bild in der Quelle erhalten eine eigene Illustration für Restaurant bzw. Café. Unterschiedliche Quellen können unterschiedliche Lizenzen und Einschränkungen haben.
 
 ### DZT-Relay
 
@@ -118,7 +118,7 @@ DZT-Daten werden ausschließlich über das serverseitige `/dzt`-Relay der App-In
 Folgende externe Server werden kontaktiert:
 
 - **OpenStreetMap (`*.tile.openstreetmap.org`):** Kartenkacheln werden direkt aus dem Browser geladen. Dabei erhält der Kartendienst die IP-Adresse und technische Angaben der Verbindung.
-- **Bildanbieter der angezeigten DZT-Datensätze:** Freigegebene Vorschaubilder und Fotos können automatisch von ihren jeweiligen Bildhosts geladen werden. Auch diese Anbieter erhalten die IP-Adresse und technische Angaben der Verbindung. Die konkreten Bild- und Quellverweise sind am Bildnachweis erreichbar.
+- **Bildanbieter der angezeigten DZT-Datensätze:** Vorschaubilder und Fotos können automatisch von ihren jeweiligen Bildhosts geladen werden. Auch diese Anbieter erhalten die IP-Adresse und technische Angaben der Verbindung. Die konkreten Bild- und Quellverweise sind am Bildnachweis erreichbar.
 
 Externe Websites und Routenplaner (Google Maps) werden erst nach einem Linkklick geöffnet; Telefonlinks werden erst auf Nutzeraktion an die Telefonanwendung übergeben.
 
@@ -141,7 +141,7 @@ Historischer [Prüfnachweis zum Runtime-Stand 1.2.3](tests/evidence/release-read
 
 ## Lieferung und Projektstruktur
 
-- App-Version: **1.2.15** (mobile Listenschaltflächen nicht mehr verdeckt, lesbare Öffnungszeiten; zuvor 1.2.14 Fehlerhinweise nach Fehlerklasse mit sichtbarem 429-Wartehinweis und bytegleicher `index.html` zur Vorlage; zuvor 1.2.13 Datenvertrag entfernt, 1.2.12 Datenschutztexte, 1.2.11 Datenvertrag flach, 1.2.10 präzisere Fehlertipps, 1.2.9 Standardfehleranzeige, 1.2.7 native Menüanimation und grüne Bedienzustände); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
+- App-Version: **1.2.16** (alle Bilder der Quelle ohne Rechtefilter, eigene Illustrationen ohne Foto; zuvor 1.2.15 mobile Listenschaltflächen nicht mehr verdeckt, lesbare Öffnungszeiten; zuvor 1.2.14 Fehlerhinweise nach Fehlerklasse mit sichtbarem 429-Wartehinweis und bytegleicher `index.html` zur Vorlage; zuvor 1.2.13 Datenvertrag entfernt, 1.2.12 Datenschutztexte, 1.2.11 Datenvertrag flach, 1.2.10 präzisere Fehlertipps, 1.2.9 Standardfehleranzeige, 1.2.7 native Menüanimation und grüne Bedienzustände); ODAS-Paketformat **2**, Config-API **1**, Dienst `tourismus-odg`.
 - `make zip` erzeugt jedes Mal ein **neues** `oda-gastrofinder.zip`, damit entfernte Dateien nicht im Archiv überleben.
 - Lieferumfang: `app/`, `assets/`, `app-package.json`, `CHANGELOG.md`, `LICENSE`.
 - `tests/`, `tools/`, `odas-config/` und Entwicklungsnachweise sind nicht Teil des ZIPs.

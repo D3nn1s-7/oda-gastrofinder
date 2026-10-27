@@ -641,14 +641,14 @@ function buildGastroQuery(region, idPage, detail) {
   ];
   if (detail) childFields.push("schema:text");
   const hourFields = ["schema:dayOfWeek", "schema:opens", "schema:closes", "schema:validFrom", "schema:validThrough"];
-  const subjectImageFilter = "FILTER NOT EXISTS { ?id schema:image ?other . FILTER(STR(?other) < STR(?subject)) }";
+  const subjectImageFilter = "FILTER EXISTS { ?subject schema:contentUrl ?subjectUrl } FILTER NOT EXISTS { ?id schema:image ?other . ?other schema:contentUrl ?otherUrl . FILTER(STR(?other) < STR(?subject)) }";
   const rootPart = `
   {
     ?id ?rootPredicate ?object .
     BIND(?id AS ?subject)
     BIND(?rootPredicate AS ?predicate)
     VALUES ?rootPredicate { ${rootFields.join(" ")} }
-    ${detail ? "" : `FILTER (?rootPredicate != schema:image || NOT EXISTS { ?id schema:image ?other . FILTER(STR(?other) < STR(?object)) })`}
+    ${detail ? "" : `FILTER (?rootPredicate != schema:image || (EXISTS { ?object schema:contentUrl ?objectUrl } && NOT EXISTS { ?id schema:image ?other . ?other schema:contentUrl ?otherUrl . FILTER(STR(?other) < STR(?object)) }))`}
   }
   UNION
   {
@@ -901,16 +901,14 @@ function normalizeGastroImages(group, stage) {
     ]);
     const url = safeHttpUrl(values.get("https://schema.org/contentUrl")[0] || values.get("https://schema.org/url")[0]);
     if (!url) continue;
-    const licenseValues = values.get("https://schema.org/license");
-    const credit = gastroAttributionValues(group, imageId).join(" · ");
-    const license = normalizeGastroLicense(licenseValues[0], credit);
-    if (!license) continue;
+    // Nutzerentscheidung 27.10.2026: alle Bilder der Quelle verwenden, ohne Filter nach
+    // Lizenz oder Urheber. Vorhandene Angaben werden unverändert am Bild angezeigt.
     const image = {
       url,
       sourceUrl: safeHttpUrl(values.get("https://schema.org/url")[0] || ""),
       title: values.get("https://schema.org/name")[0] || values.get("https://schema.org/caption")[0] || "",
-      credit,
-      licenseUrl: license.url,
+      credit: gastroAttributionValues(group, imageId).join(" · "),
+      licenseUrl: safeHttpUrl(values.get("https://schema.org/license")[0] || ""),
     };
     if (!images.some((existing) => existing.url === image.url)) images.push(image);
   }
@@ -1528,16 +1526,26 @@ function gastroTypeLabels(poi) {
 }
 
 function gastroImageIsUsable(image) {
-  if (!image || !safeHttpUrl(image.url)) return false;
-  return Boolean(normalizeGastroLicense(image.licenseUrl, image.credit));
+  return Boolean(image && safeHttpUrl(image.url));
+}
+
+// Kurzbezeichnung einer Lizenz-URL für den Bildnachweis; nicht erkennbare Lizenzen heißen nur "Lizenz".
+function gastroLicenseLabel(licenseUrl) {
+  const known = normalizeGastroLicense(licenseUrl, "Angabe");
+  if (known) return known.label;
+  const cc = String(licenseUrl || "").match(/creativecommons\.org\/(?:licenses\/([a-z-]+)|publicdomain\/(zero|mark))\/(\d\.\d)/i);
+  if (!cc) return "";
+  if (cc[2]) return cc[2].toLowerCase() === "zero" ? `CC0 ${cc[3]}` : `Public Domain Mark ${cc[3]}`;
+  return `CC ${cc[1].toUpperCase()} ${cc[3]}`;
 }
 
 function renderGastroImageAttribution(image, className = "") {
-  const license = image && normalizeGastroLicense(image.licenseUrl, image.credit);
-  const licenseUrl = safeHttpUrl(license && license.url);
-  const sourceUrl = safeHttpUrl(image && image.sourceUrl);
-  if (!image || (!licenseUrl && !sourceUrl && !image.credit)) return "";
-  return `<span class="gf-image-attribution ${escapeHtml(className)}"><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${licenseUrl ? `<a href="${escapeHtml(licenseUrl)}" target="_blank" rel="noopener noreferrer">Lizenz ${escapeHtml(license.label)}</a>` : ""}${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle</a>` : ""}</span>`;
+  if (!image) return "";
+  const licenseUrl = safeHttpUrl(image.licenseUrl);
+  const sourceUrl = safeHttpUrl(image.sourceUrl);
+  if (!licenseUrl && !sourceUrl && !image.credit) return "";
+  const label = licenseUrl ? gastroLicenseLabel(licenseUrl) : "";
+  return `<span class="gf-image-attribution ${escapeHtml(className)}"><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${licenseUrl ? `<a href="${escapeHtml(licenseUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label ? `Lizenz ${label}` : "Lizenz")}</a>` : ""}${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle</a>` : ""}</span>`;
 }
 
 function renderGastroDatasetLicense(dataLicense) {
@@ -1545,6 +1553,20 @@ function renderGastroDatasetLicense(dataLicense) {
   const url = license && safeHttpUrl(license.url);
   if (!url) return "";
   return `<div class="gf-dataset-license"><strong>Datensatzlizenz:</strong> <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(license.label)}</a>${license.attribution ? ` · ${escapeHtml(license.attribution)}` : ""}</div>`;
+}
+
+// Eigene Illustration (MIT, Ondics) für Betriebe ohne Foto; Café nur bei reinem Café-Typ.
+function gastroPlaceholderKind(item) {
+  const types = (item && item.types) || [];
+  return types.includes("https://schema.org/CafeOrCoffeeShop") && !types.includes("https://schema.org/Restaurant") ? "cafe" : "restaurant";
+}
+
+function gastroPlaceholderArt(kind) {
+  const head = `<svg class="gf-placeholder-art gf-placeholder-${kind === "cafe" ? "cafe" : "restaurant"}" viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">`;
+  if (kind === "cafe") {
+    return `${head}<rect width="160" height="100" fill="#f6ece1"/><ellipse cx="78" cy="76" rx="36" ry="7" fill="#fffdf7" stroke="#d8b994" stroke-width="2.5"/><path d="M56 42h44v12a22 22 0 0 1-44 0z" fill="#fffdf7" stroke="#a66b32" stroke-width="3.5" stroke-linejoin="round"/><path d="M100 46h5a8 8 0 0 1 0 16h-6" fill="none" stroke="#a66b32" stroke-width="3.5" stroke-linecap="round"/><path d="M67 20c-4 5 4 8 0 13M78 16c-4 5 4 9 0 15M89 20c-4 5 4 8 0 13" fill="none" stroke="#c99a6b" stroke-width="3" stroke-linecap="round"/></svg>`;
+  }
+  return `${head}<rect width="160" height="100" fill="#edf2e7"/><circle cx="80" cy="50" r="26" fill="#fffdf7" stroke="#c5d6bd" stroke-width="3"/><circle cx="80" cy="50" r="16" fill="none" stroke="#dbe6d4" stroke-width="2"/><path d="M44 28v16m-5-16v12a5 5 0 0 0 10 0V28M44 44v28" fill="none" stroke="#28543d" stroke-width="3.5" stroke-linecap="round"/><path d="M118 28c-6 4-7 13-7 21h7v23" fill="none" stroke="#28543d" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 function gastroNoPhoto(label = "Gastrofinder") {
@@ -1557,8 +1579,8 @@ function renderGastroCard(poi, uid = "gf-card", selected = false) {
   const imgUrl = firstImage && gastroImageIsUsable(firstImage) ? firstImage.url : "";
   const imgAlt = (firstImage && firstImage.title) || item.name || "Gastrofinder-Bild";
   const media = imgUrl
-    ? `<img class="gf-card-thumb-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(imgAlt)}" loading="lazy">`
-    : `<div class="gf-card-thumb-fallback">${item.isCafe ? "☕" : "🍴"}</div>`;
+    ? `<img class="gf-card-thumb-img" src="${escapeHtml(imgUrl)}" alt="${escapeHtml(imgAlt)}" loading="lazy" data-gf-placeholder="${gastroPlaceholderKind(item)}">`
+    : `<div class="gf-card-thumb-fallback">${gastroPlaceholderArt(gastroPlaceholderKind(item))}</div>`;
   const imageAttribution = imgUrl ? renderGastroImageAttribution(firstImage, "gf-card-image-attribution") : "";
   const address = item.address || {};
   const locality = item.city || address.locality || address.city || "";
@@ -2011,6 +2033,11 @@ function renderGastroShell(root, state) {
 
 function bindGastroImageFallbacks(root) {
   if (!root || typeof root.querySelectorAll !== "function") return;
+  for (const image of root.querySelectorAll("img[data-gf-placeholder]")) {
+    addGastroListener(image, "error", () => {
+      if (image.parentNode) image.outerHTML = gastroPlaceholderArt(image.getAttribute("data-gf-placeholder"));
+    }, { runtime: { events: null } });
+  }
   for (const image of root.querySelectorAll("img.gf-card-image, .gf-gallery-item img, .gf-detail-content > .gf-gallery img")) {
     addGastroListener(image, "error", () => {
       const cardMedia = image.closest(".gf-card-media");
@@ -2179,7 +2206,7 @@ function updateGastroView(root, state) {
 
 function galleryImageMarkup(image) {
   const sourceUrl = safeHttpUrl(image.sourceUrl);
-  return `<figure class="gf-gallery-figure"><img src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || "Gastrofinder-Bild")}"><figcaption><strong>${escapeHtml(image.title || "Bild")}</strong><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle ${gastroIcon("external")}</a>` : ""}<a href="${escapeHtml(safeHttpUrl(image.licenseUrl))}" target="_blank" rel="noopener noreferrer">Lizenz ${gastroIcon("external")}</a></figcaption></figure>`;
+  return `<figure class="gf-gallery-figure"><img src="${escapeHtml(safeHttpUrl(image.url))}" alt="${escapeHtml(image.title || "Gastrofinder-Bild")}"><figcaption><strong>${escapeHtml(image.title || "Bild")}</strong><span>${escapeHtml(image.credit || "Urheber nicht angegeben")}</span>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">Quelle ${gastroIcon("external")}</a>` : ""}${safeHttpUrl(image.licenseUrl) ? `<a href="${escapeHtml(safeHttpUrl(image.licenseUrl))}" target="_blank" rel="noopener noreferrer">Lizenz ${gastroIcon("external")}</a>` : ""}</figcaption></figure>`;
 }
 
 function openGastroGallery(root, state, opener = null) {
@@ -2761,9 +2788,9 @@ function renderGastroCatalogCard(poi, uid = "gf-catalog", selected = false) {
   return `<div class="gf-catalog-card${selected ? " is-selected" : ""}" data-gf-catalog-card data-gf-id="${escapeHtml(item.id || "")}">
     <div class="gf-catalog-img-wrap">
       ${imgUrl ? `
-        <img src="${escapeHtml(imgUrl)}" class="gf-catalog-img" alt="${escapeHtml(imgAlt)}" loading="lazy">
+        <img src="${escapeHtml(imgUrl)}" class="gf-catalog-img" alt="${escapeHtml(imgAlt)}" loading="lazy" data-gf-placeholder="${gastroPlaceholderKind(item)}">
       ` : `
-        <div class="gf-catalog-img-fallback">${item.isCafe ? "☕" : "🍴"}</div>
+        <div class="gf-catalog-img-fallback">${gastroPlaceholderArt(gastroPlaceholderKind(item))}<span class="gf-placeholder-caption">Kein Foto vorhanden</span></div>
       `}
       ${distance ? `<span class="gf-catalog-dist-badge">${escapeHtml(distance)}</span>` : ""}
     </div>

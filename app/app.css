@@ -1124,6 +1124,29 @@ body.gf-app-fullscreen #main-content {
   color: var(--gf-muted);
 }
 
+/* Eigene Illustrationen für Betriebe ohne Foto (Restaurant grün, Café braun). */
+.gf-placeholder-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gf-catalog-img-fallback {
+  position: relative;
+}
+
+.gf-placeholder-caption {
+  position: absolute;
+  left: .6rem;
+  bottom: .5rem;
+  padding: .15rem .45rem;
+  color: var(--gf-ink, #20352a);
+  background: rgba(255, 253, 247, .88);
+  border-radius: .4rem;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
 .gf-catalog-dist-badge {
   position: absolute;
   top: 10px;
